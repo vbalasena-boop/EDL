@@ -53,6 +53,9 @@
     border:2px dashed var(--line);background:transparent;color:var(--accent);border-radius:14px;
     padding:20px;font-size:16px;font-weight:700;cursor:pointer}
   .photobtn:active{background:var(--chipbg)}
+  .galbtn{display:block;width:100%;margin-top:10px;background:transparent;border:none;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;padding:8px}
+  .galbtn:active{color:var(--accent)}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.35}
   #thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
   #thumbs:empty{display:none}
   .thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
@@ -105,8 +108,11 @@
 
   <div class="card">
     <p class="label">2. Photos</p>
-    <button class="photobtn" id="addPhotos">📷 &nbsp;Ajouter des photos</button>
+    <button class="photobtn" id="takePhoto">📷 &nbsp;Prendre une photo</button>
+    <button class="galbtn" id="addPhotos">🖼️ &nbsp;Choisir dans la galerie</button>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
     <input type="file" id="fileInput" accept="image/*" multiple hidden>
+    <div class="hint">Prends autant de photos que tu veux — appuie à nouveau et elles s'ajoutent à la suite.</div>
     <div id="thumbs"></div>
     <div class="count" id="count"></div>
   </div>
@@ -151,7 +157,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { key:'edl_gemini_key', model:'edl_model', el:'edl_element' };
-const APP_VERSION = '8';
+const APP_VERSION = '9';
 
 // Mise à jour automatique : enregistre un service worker "réseau d'abord"
 // pour que l'app charge toujours la dernière version quand elle est en ligne.
@@ -169,7 +175,6 @@ const ELEMENTS = [
   { id:'plinthe',  label:'Plinthes',    desc:'les plinthes' },
   { id:'equip',    label:'Équipement',  desc:"le ou les équipements / électroménager visibles" },
   { id:'piece',    label:'Pièce entière', desc:'tous les éléments visibles de la pièce', full:true },
-  { id:'autre',    label:'Autre',       desc:'tous les éléments visibles sur les photos', full:true },
 ];
 
 let selectedEl = localStorage.getItem(LS.el) || 'mur';
@@ -349,7 +354,9 @@ $('openSettings').onclick = () => openSettings(false);
 $('closeSettings').onclick = closeSettings;
 $('saveSettings').onclick = saveSettings;
 $('overlay').onclick = e => { if (e.target === $('overlay')) closeSettings(); };
+$('takePhoto').onclick = () => $('cameraInput').click();
 $('addPhotos').onclick = () => $('fileInput').click();
+$('cameraInput').onchange = e => { addFiles(e.target.files); e.target.value=''; };
 $('fileInput').onchange = e => { addFiles(e.target.files); e.target.value=''; };
 $('analyze').onclick = analyze;
 $('copyBtn').onclick = copyResult;
