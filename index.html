@@ -143,6 +143,7 @@
     </div>
     <button class="btn" id="saveSettings">Enregistrer</button>
     <button class="btn sec" id="closeSettings" style="margin-top:10px">Fermer</button>
+    <p class="footnote" style="margin-top:16px">Version <span id="ver"></span> · <a href="#" id="forceUpdate">↻ Forcer la mise à jour</a></p>
   </div>
 </div>
 
@@ -150,6 +151,13 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { key:'edl_gemini_key', model:'edl_model', el:'edl_element' };
+const APP_VERSION = '8';
+
+// Mise à jour automatique : enregistre un service worker "réseau d'abord"
+// pour que l'app charge toujours la dernière version quand elle est en ligne.
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 
 // ---- Éléments et consignes ciblées ----
 const ELEMENTS = [
@@ -345,6 +353,9 @@ $('addPhotos').onclick = () => $('fileInput').click();
 $('fileInput').onchange = e => { addFiles(e.target.files); e.target.value=''; };
 $('analyze').onclick = analyze;
 $('copyBtn').onclick = copyResult;
+
+$('ver').textContent = APP_VERSION;
+$('forceUpdate').onclick = e => { e.preventDefault(); location.replace(location.pathname + '?u=' + Date.now()); };
 
 renderChips();
 checkKeyBanner();
