@@ -160,10 +160,6 @@
       <label>Clé d'accès</label>
       <input type="text" id="license" placeholder="EDL-XXXX-XXXX" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
     </div>
-    <div class="field">
-      <label>Adresse du serveur</label>
-      <input type="url" id="backend" placeholder="https://edl-ia-api.xxx.workers.dev" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-    </div>
     <button class="btn" id="saveSettings">Enregistrer</button>
     <button class="btn sec" id="closeSettings" style="margin-top:10px">Fermer</button>
     <p class="footnote" style="margin-top:16px">Version <span id="ver"></span> · <a href="#" id="forceUpdate">↻ Forcer la mise à jour</a></p>
@@ -174,10 +170,10 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report' };
-const APP_VERSION = '1.0';
+const APP_VERSION = '1.1';
 
-// URL du serveur figée pour la version vendue (laisse '' pour la régler dans ⚙️).
-const BACKEND_URL = '';
+// URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
+const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
 
 if ('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 
@@ -312,14 +308,12 @@ function showError(m){ const e=$('error'); e.textContent=m; e.classList.add('sho
 function hideError(){ $('error').classList.remove('show'); }
 function openSettings(force){
   $('license').value=localStorage.getItem(LS.license)||'';
-  $('backend').value=BACKEND_URL||localStorage.getItem(LS.backend)||'';
   $('overlay').classList.add('show');
   if(force) showError('Colle d’abord ta clé d’accès dans ⚙️.');
 }
 function closeSettings(){ $('overlay').classList.remove('show'); }
 function saveSettings(){
   localStorage.setItem(LS.license,$('license').value.trim());
-  localStorage.setItem(LS.backend,$('backend').value.trim());
   closeSettings(); hideError(); checkBanner();
 }
 function checkBanner(){
