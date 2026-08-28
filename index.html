@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EDL IA">
+<meta name="theme-color" content="#7c3aed">
+<title>EDL IA</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%237c3aed'/%3E%3Ctext x='50%25' y='54%25' font-size='90' text-anchor='middle' dominant-baseline='central'%3E%F0%9F%93%B7%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%B7%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#f4f4f7; --card:#ffffff; --text:#1c1c22; --muted:#6b6b78;
+    --line:#e5e5ec; --accent:#7c3aed; --accent-d:#6d28d9;
+    --ok:#16a34a; --bad:#dc2626; --chipbg:#f0edfb;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#121216; --card:#1c1c22; --text:#f2f2f5; --muted:#9a9aa8;
+      --line:#2c2c36; --accent:#a78bfa; --accent-d:#8b5cf6; --chipbg:#26233a;
+      --shadow:0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.45;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:16px 16px 48px}
+  header{display:flex;align-items:center;justify-content:space-between;margin:6px 0 18px}
+  header h1{font-size:22px;font-weight:800;margin:0;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+  header h1 .dot{font-size:20px}
+  .iconbtn{background:var(--card);border:1px solid var(--line);border-radius:12px;width:42px;height:42px;
+    display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;color:var(--text);box-shadow:var(--shadow)}
+  .iconbtn:active{transform:scale(.95)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;
+    padding:9px 15px;font-size:15px;font-weight:600;cursor:pointer;transition:.12s}
+  .chip:active{transform:scale(.96)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .photobtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+    border:2px dashed var(--line);background:transparent;color:var(--accent);border-radius:14px;
+    padding:20px;font-size:16px;font-weight:700;cursor:pointer}
+  .photobtn:active{background:var(--chipbg)}
+  #thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+  #thumbs:empty{display:none}
+  .thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb button{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;
+    border:none;background:rgba(0,0,0,.6);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .count{font-size:13px;color:var(--muted);margin-top:10px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;border-radius:14px;
+    padding:16px;font-size:17px;font-weight:800;cursor:pointer;color:#fff;background:var(--accent);box-shadow:var(--shadow)}
+  .btn:active{background:var(--accent-d)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.sec{background:var(--card);color:var(--accent);border:1.5px solid var(--accent)}
+  #result{white-space:pre-wrap;font-size:15.5px;line-height:1.55;margin:0 0 14px}
+  #result:empty{display:none}
+  .msg{font-size:14px;padding:12px 14px;border-radius:12px;margin-bottom:16px;display:none}
+  .msg.show{display:block}
+  .msg.err{background:rgba(220,38,38,.1);color:var(--bad);border:1px solid rgba(220,38,38,.25)}
+  .msg.info{background:var(--chipbg);color:var(--accent-d)}
+  .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+    animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:10}
+  .overlay.show{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:640px;border-radius:20px 20px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+  .sheet h2{margin:0 0 4px;font-size:19px}
+  .sheet p{margin:0 0 16px;font-size:13.5px;color:var(--muted)}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .field input,.field select{width:100%;padding:13px;border:1.5px solid var(--line);border-radius:12px;
+    font-size:16px;background:var(--bg);color:var(--text);-webkit-appearance:none}
+  .field a{color:var(--accent);font-size:13px}
+  .keyhint{font-size:12px;color:var(--muted);margin-top:6px}
+  .footnote{text-align:center;font-size:12px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="dot">📷</span> EDL IA</h1>
+    <button class="iconbtn" id="openSettings" aria-label="Réglages">⚙️</button>
+  </header>
+
+  <div id="banner" class="msg info"></div>
+
+  <div class="card">
+    <p class="label">1. Élément à décrire</p>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="card">
+    <p class="label">2. Photos</p>
+    <button class="photobtn" id="addPhotos">📷 &nbsp;Ajouter des photos</button>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+    <div id="thumbs"></div>
+    <div class="count" id="count"></div>
+  </div>
+
+  <button class="btn" id="analyze" disabled>✨ &nbsp;Analyser</button>
+
+  <div class="msg err" id="error"></div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <p class="label">Résultat</p>
+    <div id="result"></div>
+    <button class="btn sec" id="copyBtn">📋 &nbsp;Copier</button>
+  </div>
+
+  <p class="footnote">Les photos sont analysées par Google Gemini. Rien n'est stocké.</p>
+</div>
+
+<!-- Settings sheet -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h2>Réglages</h2>
+    <p>Ta clé reste sur ce téléphone uniquement.</p>
+    <div class="field">
+      <label>Clé API Gemini</label>
+      <input type="password" id="apiKey" placeholder="Colle ta clé ici (AIza… ou AQ…)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <div class="keyhint">Obtenir une clé gratuite : <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a></div>
+    </div>
+    <div class="field">
+      <label>Modèle</label>
+      <select id="model">
+        <option value="gemini-flash-lite-latest">Rapide & économique (flash-lite)</option>
+        <option value="gemini-2.5-flash">Meilleure qualité (2.5 flash)</option>
+      </select>
+    </div>
+    <button class="btn" id="saveSettings">Enregistrer</button>
+    <button class="btn sec" id="closeSettings" style="margin-top:10px">Fermer</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const LS = { key:'edl_gemini_key', model:'edl_model', el:'edl_element' };
+
+// ---- Éléments et consignes ciblées ----
+const ELEMENTS = [
+  { id:'mur',      label:'Murs',        desc:'les murs (peinture ou revêtement mural)' },
+  { id:'sol',      label:'Sol',         desc:'le sol / revêtement de sol' },
+  { id:'plafond',  label:'Plafond',     desc:'le plafond' },
+  { id:'porte',    label:'Porte',       desc:'la ou les portes et leurs poignées' },
+  { id:'fenetre',  label:'Fenêtre',     desc:'la ou les fenêtres et leurs menuiseries' },
+  { id:'plinthe',  label:'Plinthes',    desc:'les plinthes' },
+  { id:'equip',    label:'Équipement',  desc:"le ou les équipements / électroménager visibles" },
+  { id:'piece',    label:'Pièce entière', desc:'tous les éléments visibles de la pièce (murs, sol, plafond, plinthes, menuiseries, équipements)' },
+];
+
+let selectedEl = localStorage.getItem(LS.el) || 'mur';
+let photos = []; // { b64, url }
+
+function buildPrompt(){
+  const el = ELEMENTS.find(e => e.id === selectedEl) || ELEMENTS[0];
+  const cible = el.desc;
+  return (
+`Tu es un assistant qui rédige des états des lieux immobiliers. Les photos fournies montrent ${cible}, éventuellement sous plusieurs angles. `+
+`Décris UNIQUEMENT ${cible}, rien d'autre. Produis un descriptif consolidé : ne décris pas deux fois le même élément vu sur plusieurs photos. `+
+`Une ligne courte par élément, au format : Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon — Propreté : Propre / À nettoyer — Observation : … `+
+`Mets une Observation uniquement si un défaut est nettement visible, en le situant. N'indique pas la matière pour les appareils électriques et électroniques. `+
+`Juge l'état avec neutralité, sans indulgence ni sévérité systématique. N'invente rien, pas d'introduction ni de conclusion. En français.`
+  );
+}
+
+// ---- UI : chips éléments ----
+function renderChips(){
+  const c = $('chips'); c.innerHTML = '';
+  ELEMENTS.forEach(e => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (e.id === selectedEl ? ' on' : '');
+    b.textContent = e.label;
+    b.onclick = () => { selectedEl = e.id; localStorage.setItem(LS.el, e.id); renderChips(); };
+    c.appendChild(b);
+  });
+}
+
+// ---- Photos : redimensionnement + base64 ----
+function fileToJpegBase64(file, maxSize){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let { width:w, height:h } = img;
+      if (Math.max(w,h) > maxSize){
+        const r = maxSize / Math.max(w,h);
+        w = Math.round(w*r); h = Math.round(h*r);
+      }
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      const dataUrl = cv.toDataURL('image/jpeg', 0.8);
+      resolve(dataUrl.split(',')[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible')); };
+    img.src = url;
+  });
+}
+
+async function addFiles(fileList){
+  const files = Array.from(fileList);
+  for (const f of files){
+    if (!f.type.startsWith('image/')) continue;
+    try{
+      const b64 = await fileToJpegBase64(f, 1024);
+      photos.push({ b64, url:'data:image/jpeg;base64,'+b64 });
+    }catch(e){ /* ignore une image cassée */ }
+  }
+  renderThumbs();
+}
+
+function renderThumbs(){
+  const t = $('thumbs'); t.innerHTML = '';
+  photos.forEach((p, i) => {
+    const d = document.createElement('div'); d.className = 'thumb';
+    const im = document.createElement('img'); im.src = p.url; im.alt='';
+    const x = document.createElement('button'); x.textContent='×';
+    x.onclick = () => { photos.splice(i,1); renderThumbs(); };
+    d.appendChild(im); d.appendChild(x); t.appendChild(d);
+  });
+  $('count').textContent = photos.length ? photos.length + ' photo(s) ajoutée(s)' : '';
+  refreshAnalyze();
+}
+
+function refreshAnalyze(){
+  $('analyze').disabled = photos.length === 0;
+}
+
+// ---- Appel Gemini ----
+async function analyze(){
+  const key = (localStorage.getItem(LS.key) || '').trim();
+  if (!key){ openSettings(true); return; }
+  const model = localStorage.getItem(LS.model) || 'gemini-flash-lite-latest';
+
+  hideError();
+  const btn = $('analyze');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> &nbsp;Analyse en cours…';
+
+  const parts = [{ text: buildPrompt() }];
+  photos.forEach(p => parts.push({ inline_data:{ mime_type:'image/jpeg', data:p.b64 } }));
+  const body = { contents:[{ parts }], generationConfig:{ temperature:0.2, maxOutputTokens:2048 } };
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+
+  try{
+    const res = await fetch(endpoint, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok){
+      throw new Error((data && data.error && data.error.message) || ('Erreur HTTP ' + res.status));
+    }
+    const cand = data.candidates && data.candidates[0];
+    let text = '';
+    if (cand && cand.content && cand.content.parts){
+      text = cand.content.parts.map(p => p.text).filter(Boolean).join('\n').trim();
+    }
+    if (!text){
+      const fr = cand && cand.finishReason;
+      throw new Error(fr === 'SAFETY' ? 'Réponse bloquée par le filtre de sécurité.' : 'Réponse vide de l’IA.');
+    }
+    $('result').textContent = text;
+    $('resultCard').style.display = 'block';
+    $('resultCard').scrollIntoView({ behavior:'smooth', block:'start' });
+  }catch(err){
+    showError('Échec de l’analyse : ' + err.message + (/key|API|401|403|clé/i.test(err.message) ? ' — vérifie ta clé dans ⚙️.' : ''));
+  }finally{
+    btn.innerHTML = '✨ &nbsp;Analyser';
+    refreshAnalyze();
+  }
+}
+
+// ---- Copier ----
+async function copyResult(){
+  const txt = $('result').textContent;
+  try{
+    await navigator.clipboard.writeText(txt);
+    const b = $('copyBtn'); const old = b.innerHTML;
+    b.innerHTML = '✅ &nbsp;Copié !';
+    setTimeout(() => b.innerHTML = old, 1500);
+  }catch(e){
+    showError('Copie impossible. Sélectionne le texte manuellement.');
+  }
+}
+
+// ---- Messages ----
+function showError(m){ const e=$('error'); e.textContent=m; e.classList.add('show'); }
+function hideError(){ $('error').classList.remove('show'); }
+
+// ---- Réglages ----
+function openSettings(forceMsg){
+  $('apiKey').value = localStorage.getItem(LS.key) || '';
+  $('model').value = localStorage.getItem(LS.model) || 'gemini-flash-lite-latest';
+  $('overlay').classList.add('show');
+  if (forceMsg) showError('Colle d’abord ta clé Gemini dans ⚙️ pour lancer l’analyse.');
+}
+function closeSettings(){ $('overlay').classList.remove('show'); }
+function saveSettings(){
+  localStorage.setItem(LS.key, $('apiKey').value.trim());
+  localStorage.setItem(LS.model, $('model').value);
+  closeSettings(); hideError();
+  checkKeyBanner();
+}
+function checkKeyBanner(){
+  const b = $('banner');
+  if (!(localStorage.getItem(LS.key) || '').trim()){
+    b.textContent = '👋 Bienvenue ! Ouvre ⚙️ et colle ta clé Gemini pour commencer.';
+    b.classList.add('show');
+  }else{
+    b.classList.remove('show');
+  }
+}
+
+// ---- Init ----
+$('openSettings').onclick = () => openSettings(false);
+$('closeSettings').onclick = closeSettings;
+$('saveSettings').onclick = saveSettings;
+$('overlay').onclick = e => { if (e.target === $('overlay')) closeSettings(); };
+$('addPhotos').onclick = () => $('fileInput').click();
+$('fileInput').onchange = e => { addFiles(e.target.files); e.target.value=''; };
+$('analyze').onclick = analyze;
+$('copyBtn').onclick = copyResult;
+
+renderChips();
+checkKeyBanner();
+</script>
+</body>
+</html>
