@@ -160,7 +160,8 @@ const ELEMENTS = [
   { id:'fenetre',  label:'Fenêtre',     desc:'la ou les fenêtres et leurs menuiseries' },
   { id:'plinthe',  label:'Plinthes',    desc:'les plinthes' },
   { id:'equip',    label:'Équipement',  desc:"le ou les équipements / électroménager visibles" },
-  { id:'piece',    label:'Pièce entière', desc:'tous les éléments visibles de la pièce (murs, sol, plafond, plinthes, menuiseries, équipements)' },
+  { id:'piece',    label:'Pièce entière', desc:'tous les éléments visibles de la pièce', full:true },
+  { id:'autre',    label:'Autre',       desc:'tous les éléments visibles sur les photos', full:true },
 ];
 
 let selectedEl = localStorage.getItem(LS.el) || 'mur';
@@ -169,9 +170,13 @@ let photos = []; // { b64, url }
 function buildPrompt(){
   const el = ELEMENTS.find(e => e.id === selectedEl) || ELEMENTS[0];
   const cible = el.desc;
+  const full = el.full === true;
+  const intro = full
+    ? `Tu es un expert en états des lieux immobiliers. Les photos fournies montrent une pièce, éventuellement sous plusieurs angles. Décris TOUS les éléments visibles (murs, sol, plafond, plinthes, portes, fenêtres, menuiseries, équipements, meubles fixes…), sans en omettre. `
+    : `Tu es un expert en états des lieux immobiliers. Les photos fournies montrent ${cible}, éventuellement sous plusieurs angles. Décris UNIQUEMENT ${cible}, rien d'autre. `;
   return (
-`Tu es un expert en états des lieux immobiliers. Les photos fournies montrent ${cible}, éventuellement sous plusieurs angles. `+
-`Décris UNIQUEMENT ${cible}, rien d'autre. Produis un descriptif consolidé : ne décris pas deux fois le même élément vu sur plusieurs photos. `+
+intro +
+`Produis un descriptif consolidé : ne décris pas deux fois le même élément vu sur plusieurs photos. `+
 `Une ligne courte par élément : « Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon », suivi — seulement s'il y a un défaut — d'un tiret puis d'une description concise. `+
 `Décris avec l'œil d'un professionnel ce qui justifie l'état : usure, rayures, taches, saleté, poussière, traces, fissures, éclats, moisissures… en le situant. Si l'élément est propre et sans défaut, n'écris RIEN après l'état (ni « Néant », ni « RAS », ni « Observation »). `+
 `N'ajoute JAMAIS d'indication de fonctionnement, ni de champ « Propreté », ni de champ « Observation » : la propreté se dit directement dans la description. `+
