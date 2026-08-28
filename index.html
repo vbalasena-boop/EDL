@@ -169,7 +169,8 @@ function buildPrompt(){
   return (
 `Tu es un assistant qui rédige des états des lieux immobiliers. Les photos fournies montrent ${cible}, éventuellement sous plusieurs angles. `+
 `Décris UNIQUEMENT ${cible}, rien d'autre. Produis un descriptif consolidé : ne décris pas deux fois le même élément vu sur plusieurs photos. `+
-`Une ligne courte par élément, au format : Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon — Propreté : Propre / À nettoyer — Observation : … `+
+`Une ligne courte par élément, au format : Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon — Propreté : Propre / À nettoyer — Fonctionnement : Fonctionne / Ne fonctionne pas / Non testé / Non testable — Observation : … `+
+`Indique Fonctionnement seulement pour les éléments qui ont une fonction (équipements, électroménager, prises, interrupteurs, robinetterie, volets, chauffage) : comme tu juges sur photo sans manipuler, mets « Non testé » quand tu ne peux pas le vérifier, sauf défaut nettement visible. Pour les murs, sols, plafonds et plinthes, mets « Fonctionnement : Non testable ». `+
 `Mets une Observation uniquement si un défaut est nettement visible, en le situant. N'indique pas la matière pour les appareils électriques et électroniques. `+
 `Juge l'état avec neutralité, sans indulgence ni sévérité systématique. N'invente rien, pas d'introduction ni de conclusion. En français.`
   );
