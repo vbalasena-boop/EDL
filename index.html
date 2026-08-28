@@ -172,9 +172,9 @@ function buildPrompt(){
   return (
 `Tu es un expert en états des lieux immobiliers. Les photos fournies montrent ${cible}, éventuellement sous plusieurs angles. `+
 `Décris UNIQUEMENT ${cible}, rien d'autre. Produis un descriptif consolidé : ne décris pas deux fois le même élément vu sur plusieurs photos. `+
-`Une ligne courte par élément, au format : Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon — Observation : … `+
-`Dans l'Observation, précise avec l'œil d'un professionnel ce qui justifie l'état : usure, rayures, taches, saleté, poussière, traces, fissures, éclats, moisissures… en le situant. N'écris pas d'Observation si l'élément est propre et sans défaut visible. `+
-`N'ajoute JAMAIS d'indication de fonctionnement (n'écris pas si un appareil marche ou non, ni « testé/non testé ») : ce point sera renseigné à la main. N'ajoute pas non plus de champ propreté séparé. `+
+`Une ligne courte par élément : « Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon », suivi — seulement s'il y a un défaut — d'un tiret puis d'une description concise. `+
+`Décris avec l'œil d'un professionnel ce qui justifie l'état : usure, rayures, taches, saleté, poussière, traces, fissures, éclats, moisissures… en le situant. Si l'élément est propre et sans défaut, n'écris RIEN après l'état (ni « Néant », ni « RAS », ni « Observation »). `+
+`N'ajoute JAMAIS d'indication de fonctionnement, ni de champ « Propreté », ni de champ « Observation » : la propreté se dit directement dans la description. `+
 `N'indique pas la matière pour les appareils électriques et électroniques. Juge avec neutralité, sans indulgence ni sévérité systématique. N'invente rien, pas d'introduction ni de conclusion. En français.`
   );
 }
