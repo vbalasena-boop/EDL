@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EDL IA">
+<meta name="theme-color" content="#7c3aed">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>EDL IA Pro</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%237c3aed'/%3E%3Ctext x='50%25' y='54%25' font-size='90' text-anchor='middle' dominant-baseline='central'%3E%F0%9F%93%B7%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%B7%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#f4f4f7; --card:#ffffff; --text:#1c1c22; --muted:#6b6b78;
+    --line:#e5e5ec; --accent:#7c3aed; --accent-d:#6d28d9;
+    --bad:#dc2626; --chipbg:#f0edfb;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#121216; --card:#1c1c22; --text:#f2f2f5; --muted:#9a9aa8;
+      --line:#2c2c36; --accent:#a78bfa; --accent-d:#8b5cf6; --chipbg:#26233a;
+      --shadow:0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.45;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  .wrap{max-width:640px;margin:0 auto;padding:16px 16px 48px}
+  header{display:flex;align-items:center;justify-content:space-between;margin:6px 0 18px}
+  header h1{font-size:22px;font-weight:800;margin:0;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+  header h1 .dot{font-size:20px}
+  .iconbtn{background:var(--card);border:1px solid var(--line);border-radius:12px;width:42px;height:42px;
+    display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;color:var(--text);box-shadow:var(--shadow)}
+  .iconbtn:active{transform:scale(.95)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;
+    padding:8px 14px;font-size:14.5px;font-weight:600;cursor:pointer;transition:.12s}
+  .chip:active{transform:scale(.96)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .photobtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+    border:2px dashed var(--line);background:transparent;color:var(--accent);border-radius:14px;
+    padding:20px;font-size:16px;font-weight:700;cursor:pointer}
+  .photobtn:active{background:var(--chipbg)}
+  .galbtn,.linkbtn{display:block;width:100%;margin-top:10px;background:transparent;border:none;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;padding:8px;text-align:center}
+  .galbtn:active,.linkbtn:active{color:var(--accent)}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.35}
+  #thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+  #thumbs:empty{display:none}
+  .thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb button{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;
+    border:none;background:rgba(0,0,0,.6);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .count{font-size:13px;color:var(--muted);margin-top:10px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;border-radius:14px;
+    padding:16px;font-size:16.5px;font-weight:800;cursor:pointer;color:#fff;background:var(--accent);box-shadow:var(--shadow)}
+  .btn:active{background:var(--accent-d)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.sec{background:var(--card);color:var(--accent);border:1.5px solid var(--accent)}
+  .btn.danger{background:var(--card);color:var(--bad);border:1.5px solid var(--bad)}
+  .btn.small{padding:12px;font-size:15px}
+  .btnrow{display:flex;gap:10px;margin-top:4px}
+  .btnrow .btn{flex:1}
+  #result,#reportText{white-space:pre-wrap;font-size:15.5px;line-height:1.55;margin:0 0 14px}
+  #reportText{max-height:280px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14.5px}
+  .disclaimer{font-size:12.5px;color:var(--muted);margin:-4px 0 14px;line-height:1.4}
+  .quota{font-size:12.5px;color:var(--muted);text-align:center;margin:2px 0 10px}
+  .msg{font-size:14px;padding:12px 14px;border-radius:12px;margin-bottom:16px;display:none}
+  .msg.show{display:block}
+  .msg.err{background:rgba(220,38,38,.1);color:var(--bad);border:1px solid rgba(220,38,38,.25)}
+  .msg.info{background:var(--chipbg);color:var(--accent-d)}
+  .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+    animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:10}
+  .overlay.show{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:640px;border-radius:20px 20px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom));border-top:1px solid var(--line);max-height:90vh;overflow:auto}
+  .sheet h2{margin:0 0 4px;font-size:19px}
+  .sheet p{margin:0 0 16px;font-size:13.5px;color:var(--muted)}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .field input{width:100%;padding:13px;border:1.5px solid var(--line);border-radius:12px;
+    font-size:16px;background:var(--bg);color:var(--text);-webkit-appearance:none}
+  .footnote{text-align:center;font-size:12px;color:var(--muted);margin-top:8px}
+  .footnote a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="dot">📷</span> EDL IA</h1>
+    <button class="iconbtn" id="openSettings" aria-label="Réglages">⚙️</button>
+  </header>
+
+  <div id="banner" class="msg info"></div>
+
+  <div class="card">
+    <p class="label">1. Pièce</p>
+    <div class="chips" id="rooms"></div>
+  </div>
+
+  <div class="card">
+    <p class="label">2. Élément à décrire</p>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="card">
+    <p class="label">3. Photos</p>
+    <button class="photobtn" id="takePhoto">📷 &nbsp;Prendre une photo</button>
+    <button class="galbtn" id="addPhotos">🖼️ &nbsp;Choisir dans la galerie</button>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+    <div class="hint">Prends autant de photos que tu veux — appuie à nouveau et elles s'ajoutent à la suite.</div>
+    <div id="thumbs"></div>
+    <div class="count" id="count"></div>
+  </div>
+
+  <button class="btn" id="analyze" disabled>✨ &nbsp;Analyser</button>
+  <div class="quota" id="quota"></div>
+  <button class="linkbtn" id="clearAll" style="display:none">🗑 Tout effacer (photos et résultat)</button>
+
+  <div class="msg err" id="error"></div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <p class="label">Résultat</p>
+    <div id="result"></div>
+    <p class="disclaimer">💡 Suggestion générée par IA — à vérifier et valider par le professionnel.</p>
+    <div class="btnrow">
+      <button class="btn sec small" id="copyBtn">📋 Copier</button>
+      <button class="btn small" id="addReport">➕ Au rapport</button>
+    </div>
+  </div>
+
+  <div class="card" id="reportCard" style="display:none">
+    <p class="label">📋 Rapport (<span id="reportCount">0</span>)</p>
+    <div id="reportText"></div>
+    <div class="btnrow">
+      <button class="btn sec small" id="copyReport">📋 Copier le rapport</button>
+      <button class="btn danger small" id="clearReport">🗑 Vider</button>
+    </div>
+  </div>
+
+  <p class="footnote">Assistant de rédaction — le professionnel vérifie et valide.</p>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h2>Réglages</h2>
+    <p>Colle la clé d'accès reçue à ton achat.</p>
+    <div class="field">
+      <label>Clé d'accès</label>
+      <input type="text" id="license" placeholder="EDL-XXXX-XXXX" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="field">
+      <label>Adresse du serveur</label>
+      <input type="url" id="backend" placeholder="https://edl-ia-api.xxx.workers.dev" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="btn" id="saveSettings">Enregistrer</button>
+    <button class="btn sec" id="closeSettings" style="margin-top:10px">Fermer</button>
+    <p class="footnote" style="margin-top:16px">Version <span id="ver"></span> · <a href="#" id="forceUpdate">↻ Forcer la mise à jour</a></p>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report' };
+const APP_VERSION = '1.0';
+
+// URL du serveur figée pour la version vendue (laisse '' pour la régler dans ⚙️).
+const BACKEND_URL = '';
+
+if ('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+
+const ROOMS = [
+  { id:'entree', label:'Entrée' }, { id:'cuisine', label:'Cuisine' }, { id:'salon', label:'Salon' },
+  { id:'chambre', label:'Chambre' }, { id:'sdb', label:'Salle de bain' }, { id:'wc', label:'WC' },
+  { id:'couloir', label:'Couloir' }, { id:'autre', label:'Autre pièce' },
+];
+const ELEMENTS = [
+  { id:'mur', label:'Murs', desc:'les murs (peinture ou revêtement mural)' },
+  { id:'sol', label:'Sol', desc:'le sol / revêtement de sol' },
+  { id:'plafond', label:'Plafond', desc:'le plafond' },
+  { id:'plinthe', label:'Plinthes', desc:'les plinthes' },
+  { id:'porte', label:'Porte', desc:'la ou les portes et leurs poignées' },
+  { id:'fenetre', label:'Fenêtre', desc:'la ou les fenêtres et leurs menuiseries' },
+  { id:'volet', label:'Volet/Store', desc:'le ou les volets ou stores' },
+  { id:'prise', label:'Prise', desc:'la ou les prises électriques' },
+  { id:'inter', label:'Interrupteur', desc:'le ou les interrupteurs' },
+  { id:'radiateur', label:'Radiateur', desc:'le ou les radiateurs / le chauffage' },
+  { id:'meuble', label:'Meuble', desc:'le ou les meubles' },
+  { id:'placard', label:'Placard', desc:'le ou les placards et rangements' },
+  { id:'evier', label:'Évier', desc:"l'évier et sa robinetterie" },
+  { id:'sanitaire', label:'WC/Sanitaire', desc:'les sanitaires (WC, lavabo, douche, baignoire)' },
+  { id:'equip', label:'Équipement', desc:"le ou les équipements / électroménager visibles" },
+  { id:'piece', label:'Pièce entière', desc:'tous les éléments visibles de la pièce', full:true },
+];
+
+let selectedEl   = localStorage.getItem(LS.el)   || 'mur';
+let selectedRoom = localStorage.getItem(LS.room) || 'entree';
+let photos = [];
+
+function currentLabel(){
+  const r = ROOMS.find(x=>x.id===selectedRoom); const e = ELEMENTS.find(x=>x.id===selectedEl);
+  return (r? r.label : '') + (e? ' · ' + e.label : '');
+}
+function buildPrompt(){
+  const el = ELEMENTS.find(e => e.id === selectedEl) || ELEMENTS[0];
+  const room = ROOMS.find(r => r.id === selectedRoom);
+  const roomTxt = room ? ` (pièce : ${room.label})` : '';
+  const cible = el.desc; const full = el.full === true;
+  const intro = full
+    ? `Tu es un expert en états des lieux immobiliers. Les photos montrent une pièce${roomTxt}, éventuellement sous plusieurs angles. Décris TOUS les éléments visibles (murs, sol, plafond, plinthes, portes, fenêtres, menuiseries, équipements, meubles fixes…), sans en omettre. `
+    : `Tu es un expert en états des lieux immobiliers. Les photos montrent ${cible}${roomTxt}, éventuellement sous plusieurs angles. Décris UNIQUEMENT ${cible}, rien d'autre. `;
+  return (
+intro +
+`Produis un descriptif consolidé : ne décris pas deux fois le même élément vu sur plusieurs photos. `+
+`Une ligne courte par élément : « Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon », suivi — seulement s'il y a un défaut — d'un tiret puis d'une description concise. `+
+`Décris avec l'œil d'un professionnel ce qui justifie l'état : usure, rayures, taches, saleté, poussière, traces, fissures, éclats, moisissures… en le situant. Si l'élément est propre et sans défaut, n'écris RIEN après l'état (ni « Néant », ni « RAS », ni « Observation »). `+
+`N'ajoute JAMAIS d'indication de fonctionnement, ni de champ « Propreté », ni de champ « Observation » : la propreté se dit directement dans la description. `+
+`N'indique pas la matière pour les appareils électriques et électroniques. Juge avec neutralité, sans indulgence ni sévérité systématique. N'invente rien, pas d'introduction ni de conclusion. En français.`
+  );
+}
+
+function renderRooms(){
+  const c=$('rooms'); c.innerHTML='';
+  ROOMS.forEach(r=>{ const b=document.createElement('button'); b.className='chip'+(r.id===selectedRoom?' on':'');
+    b.textContent=r.label; b.onclick=()=>{selectedRoom=r.id;localStorage.setItem(LS.room,r.id);renderRooms();}; c.appendChild(b);});
+}
+function renderChips(){
+  const c=$('chips'); c.innerHTML='';
+  ELEMENTS.forEach(e=>{ const b=document.createElement('button'); b.className='chip'+(e.id===selectedEl?' on':'');
+    b.textContent=e.label; b.onclick=()=>{selectedEl=e.id;localStorage.setItem(LS.el,e.id);renderChips();}; c.appendChild(b);});
+}
+function fileToJpegBase64(file,maxSize){
+  return new Promise((resolve,reject)=>{ const url=URL.createObjectURL(file); const img=new Image();
+    img.onload=()=>{ let {width:w,height:h}=img; if(Math.max(w,h)>maxSize){const r=maxSize/Math.max(w,h);w=Math.round(w*r);h=Math.round(h*r);}
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url); resolve(cv.toDataURL('image/jpeg',0.8).split(',')[1]); };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Image illisible'));}; img.src=url; });
+}
+async function addFiles(list){
+  for(const f of Array.from(list)){ if(!f.type.startsWith('image/'))continue;
+    try{const b64=await fileToJpegBase64(f,1024);photos.push({b64,url:'data:image/jpeg;base64,'+b64});}catch(e){} }
+  renderThumbs();
+}
+function renderThumbs(){
+  const t=$('thumbs'); t.innerHTML='';
+  photos.forEach((p,i)=>{ const d=document.createElement('div'); d.className='thumb';
+    const im=document.createElement('img'); im.src=p.url; im.alt='';
+    const x=document.createElement('button'); x.textContent='×'; x.onclick=()=>{photos.splice(i,1);renderThumbs();};
+    d.appendChild(im); d.appendChild(x); t.appendChild(d); });
+  $('count').textContent = photos.length ? photos.length+' photo(s) ajoutée(s)' : '';
+  $('analyze').disabled = photos.length===0; refreshClear();
+}
+function refreshClear(){ $('clearAll').style.display=(photos.length||$('resultCard').style.display==='block')?'block':'none'; }
+
+function backendURL(){ return (BACKEND_URL || localStorage.getItem(LS.backend) || '').trim().replace(/\/$/,''); }
+
+async function analyze(){
+  const backend = backendURL();
+  const license = (localStorage.getItem(LS.license)||'').trim();
+  if (!backend || !license){ openSettings(true); return; }
+  hideError();
+  const btn=$('analyze'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span> &nbsp;Analyse en cours…';
+
+  const parts=[{text:buildPrompt()}];
+  photos.forEach(p=>parts.push({inline_data:{mime_type:'image/jpeg',data:p.b64}}));
+  const body={ model:'gemini-flash-lite-latest', contents:[{parts}], generationConfig:{temperature:0.2,maxOutputTokens:2048} };
+
+  try{
+    const res=await fetch(backend,{ method:'POST', headers:{'Content-Type':'application/json','X-License':license}, body:JSON.stringify(body) });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error || ('Erreur '+res.status));
+    const text=(data.text||'').trim();
+    if(!text) throw new Error('Réponse vide.');
+    showResult(text); localStorage.setItem(LS.last,text);
+    if(typeof data.remaining==='number') showQuota(data.remaining);
+  }catch(err){ showError('Échec de l’analyse : '+err.message); }
+  finally{ btn.innerHTML='✨ &nbsp;Analyser'; btn.disabled=photos.length===0; }
+}
+function showQuota(n){ $('quota').textContent = 'Analyses restantes : ' + n; }
+function showResult(text){
+  $('result').textContent=text; $('resultCard').style.display='block'; refreshClear();
+  $('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function copyText(txt,btn){
+  try{ await navigator.clipboard.writeText(txt); const old=btn.innerHTML; btn.innerHTML='✅ Copié !'; setTimeout(()=>btn.innerHTML=old,1500);}
+  catch(e){ showError('Copie impossible. Sélectionne le texte manuellement.'); }
+}
+function getReport(){ try{return JSON.parse(localStorage.getItem(LS.report)||'[]');}catch(e){return [];} }
+function saveReport(a){ localStorage.setItem(LS.report,JSON.stringify(a)); renderReport(); }
+function addToReport(){
+  const txt=$('result').textContent.trim(); if(!txt)return;
+  const a=getReport(); a.push({t:currentLabel(),b:txt}); saveReport(a);
+  const b=$('addReport'); const old=b.innerHTML; b.innerHTML='✅ Ajouté'; setTimeout(()=>b.innerHTML=old,1500);
+}
+function reportToText(a){ return a.map(e=>'=== '+e.t+' ===\n'+e.b).join('\n\n'); }
+function renderReport(){ const a=getReport(); $('reportCount').textContent=a.length; $('reportText').textContent=reportToText(a); $('reportCard').style.display=a.length?'block':'none'; }
+function clearReport(){ if(getReport().length && !confirm('Vider tout le rapport ?'))return; saveReport([]); }
+function clearAll(){ photos=[]; renderThumbs(); $('result').textContent=''; $('resultCard').style.display='none'; localStorage.removeItem(LS.last); hideError(); refreshClear(); }
+function showError(m){ const e=$('error'); e.textContent=m; e.classList.add('show'); }
+function hideError(){ $('error').classList.remove('show'); }
+function openSettings(force){
+  $('license').value=localStorage.getItem(LS.license)||'';
+  $('backend').value=BACKEND_URL||localStorage.getItem(LS.backend)||'';
+  $('overlay').classList.add('show');
+  if(force) showError('Colle d’abord ta clé d’accès dans ⚙️.');
+}
+function closeSettings(){ $('overlay').classList.remove('show'); }
+function saveSettings(){
+  localStorage.setItem(LS.license,$('license').value.trim());
+  localStorage.setItem(LS.backend,$('backend').value.trim());
+  closeSettings(); hideError(); checkBanner();
+}
+function checkBanner(){
+  const b=$('banner');
+  if(!(localStorage.getItem(LS.license)||'').trim() || !backendURL()){
+    b.textContent='👋 Bienvenue ! Ouvre ⚙️ et colle ta clé d’accès pour commencer.'; b.classList.add('show');
+  } else b.classList.remove('show');
+}
+
+$('openSettings').onclick=()=>openSettings(false);
+$('closeSettings').onclick=closeSettings;
+$('saveSettings').onclick=saveSettings;
+$('overlay').onclick=e=>{ if(e.target===$('overlay'))closeSettings(); };
+$('takePhoto').onclick=()=>$('cameraInput').click();
+$('addPhotos').onclick=()=>$('fileInput').click();
+$('cameraInput').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
+$('fileInput').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
+$('analyze').onclick=analyze;
+$('clearAll').onclick=clearAll;
+$('copyBtn').onclick=e=>copyText($('result').textContent,e.currentTarget);
+$('addReport').onclick=addToReport;
+$('copyReport').onclick=e=>copyText(reportToText(getReport()),e.currentTarget);
+$('clearReport').onclick=clearReport;
+$('ver').textContent=APP_VERSION;
+$('forceUpdate').onclick=e=>{ e.preventDefault(); location.replace(location.pathname+'?u='+Date.now()); };
+
+renderRooms(); renderChips(); renderReport(); checkBanner();
+const last=localStorage.getItem(LS.last);
+if(last){ $('result').textContent=last; $('resultCard').style.display='block'; refreshClear(); }
+</script>
+</body>
+</html>
