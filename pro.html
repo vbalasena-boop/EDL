@@ -102,6 +102,7 @@
   </header>
 
   <div id="banner" class="msg info"></div>
+  <div id="offline" class="msg info"></div>
 
   <div class="card">
     <p class="label">1. Pièce</p>
@@ -182,7 +183,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model' };
-const APP_VERSION = '1.2';
+const APP_VERSION = '1.3';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -294,11 +295,27 @@ async function runRequest(contents, btn, busyLabel){
   finally{ btn.innerHTML=old; btn.disabled=false; $('analyze').disabled=photos.length===0; }
 }
 
+let pendingAnalyze=false;
 function analyze(){
   if(!photos.length) return;
+  if(!navigator.onLine){
+    pendingAnalyze=true;
+    showOffline('📴 Pas de réseau — tes photos sont gardées. L’analyse partira automatiquement dès le retour d’internet.');
+    return;
+  }
   const parts=[{text:buildPrompt()}];
   photos.forEach(p=>parts.push({inline_data:{mime_type:'image/jpeg',data:p.b64}}));
   runRequest([{parts}], $('analyze'), 'Analyse en cours…');
+}
+function showOffline(m){ const o=$('offline'); o.textContent=m; o.classList.add('show'); }
+function hideOffline(){ $('offline').classList.remove('show'); }
+function updateOnline(){
+  if(navigator.onLine){
+    hideOffline();
+    if(pendingAnalyze){ pendingAnalyze=false; analyze(); }
+  } else {
+    showOffline('📴 Hors ligne — l’analyse a besoin d’internet. Tu peux prendre tes photos, elles sont gardées.');
+  }
 }
 
 function reformulate(mode, btn){
@@ -383,7 +400,9 @@ $('clearReport').onclick=clearReport;
 $('ver').textContent=APP_VERSION;
 $('forceUpdate').onclick=e=>{ e.preventDefault(); location.replace(location.pathname+'?u='+Date.now()); };
 
-renderRooms(); renderChips(); renderReport(); checkBanner(); loadQuota();
+window.addEventListener('online',updateOnline);
+window.addEventListener('offline',updateOnline);
+renderRooms(); renderChips(); renderReport(); checkBanner(); loadQuota(); updateOnline();
 const last=localStorage.getItem(LS.last);
 if(last){ $('result').textContent=last; $('resultCard').style.display='block'; refreshClear(); }
 </script>
