@@ -88,7 +88,7 @@
   .sheet p{margin:0 0 16px;font-size:13.5px;color:var(--muted)}
   .field{margin-bottom:16px}
   .field label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px}
-  .field input{width:100%;padding:13px;border:1.5px solid var(--line);border-radius:12px;
+  .field input,.field select{width:100%;padding:13px;border:1.5px solid var(--line);border-radius:12px;
     font-size:16px;background:var(--bg);color:var(--text);-webkit-appearance:none}
   .footnote{text-align:center;font-size:12px;color:var(--muted);margin-top:8px}
   .footnote a{color:var(--accent)}
@@ -134,6 +134,11 @@
     <p class="label">Résultat</p>
     <div id="result"></div>
     <p class="disclaimer">💡 Suggestion générée par IA — à vérifier et valider par le professionnel.</p>
+    <div class="btnrow" style="margin-bottom:8px">
+      <button class="btn sec small" id="rfShort">✂️ Plus court</button>
+      <button class="btn sec small" id="rfLong">➕ Détaillé</button>
+      <button class="btn sec small" id="rfAlt">🔄 Reformuler</button>
+    </div>
     <div class="btnrow">
       <button class="btn sec small" id="copyBtn">📋 Copier</button>
       <button class="btn small" id="addReport">➕ Au rapport</button>
@@ -160,6 +165,13 @@
       <label>Clé d'accès</label>
       <input type="text" id="license" placeholder="EDL-XXXX-XXXX" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
     </div>
+    <div class="field">
+      <label>Qualité de l'analyse</label>
+      <select id="model">
+        <option value="gemini-flash-lite-latest">Rapide (recommandé)</option>
+        <option value="gemini-2.5-flash">Meilleure qualité (plus lent)</option>
+      </select>
+    </div>
     <button class="btn" id="saveSettings">Enregistrer</button>
     <button class="btn sec" id="closeSettings" style="margin-top:10px">Fermer</button>
     <p class="footnote" style="margin-top:16px">Version <span id="ver"></span> · <a href="#" id="forceUpdate">↻ Forcer la mise à jour</a></p>
@@ -169,8 +181,8 @@
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
-const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report' };
-const APP_VERSION = '1.1';
+const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model' };
+const APP_VERSION = '1.2';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -262,29 +274,55 @@ function refreshClear(){ $('clearAll').style.display=(photos.length||$('resultCa
 
 function backendURL(){ return (BACKEND_URL || localStorage.getItem(LS.backend) || '').trim().replace(/\/$/,''); }
 
-async function analyze(){
-  const backend = backendURL();
-  const license = (localStorage.getItem(LS.license)||'').trim();
-  if (!backend || !license){ openSettings(true); return; }
+function currentModel(){ return localStorage.getItem(LS.model) || 'gemini-flash-lite-latest'; }
+
+async function runRequest(contents, btn, busyLabel){
+  const backend=backendURL();
+  const license=(localStorage.getItem(LS.license)||'').trim();
+  if(!backend || !license){ openSettings(true); return; }
   hideError();
-  const btn=$('analyze'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span> &nbsp;Analyse en cours…';
-
-  const parts=[{text:buildPrompt()}];
-  photos.forEach(p=>parts.push({inline_data:{mime_type:'image/jpeg',data:p.b64}}));
-  const body={ model:'gemini-flash-lite-latest', contents:[{parts}], generationConfig:{temperature:0.2,maxOutputTokens:2048} };
-
+  const old=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spinner"></span> &nbsp;'+(busyLabel||'…');
   try{
-    const res=await fetch(backend,{ method:'POST', headers:{'Content-Type':'application/json','X-License':license}, body:JSON.stringify(body) });
+    const res=await fetch(backend,{ method:'POST', headers:{'Content-Type':'application/json','X-License':license},
+      body:JSON.stringify({ model:currentModel(), contents, generationConfig:{temperature:0.2,maxOutputTokens:2048} }) });
     const data=await res.json();
     if(!res.ok) throw new Error(data.error || ('Erreur '+res.status));
     const text=(data.text||'').trim();
     if(!text) throw new Error('Réponse vide.');
-    showResult(text); localStorage.setItem(LS.last,text);
-    if(typeof data.remaining==='number') showQuota(data.remaining);
-  }catch(err){ showError('Échec de l’analyse : '+err.message); }
-  finally{ btn.innerHTML='✨ &nbsp;Analyser'; btn.disabled=photos.length===0; }
+    showResult(text); localStorage.setItem(LS.last,text); loadQuota();
+  }catch(err){ showError('Échec : '+err.message); }
+  finally{ btn.innerHTML=old; btn.disabled=false; $('analyze').disabled=photos.length===0; }
 }
-function showQuota(n){ $('quota').textContent = 'Analyses restantes : ' + n; }
+
+function analyze(){
+  if(!photos.length) return;
+  const parts=[{text:buildPrompt()}];
+  photos.forEach(p=>parts.push({inline_data:{mime_type:'image/jpeg',data:p.b64}}));
+  runRequest([{parts}], $('analyze'), 'Analyse en cours…');
+}
+
+function reformulate(mode, btn){
+  const current=$('result').textContent.trim(); if(!current) return;
+  const instr = mode==='court'
+      ? 'Réécris ce descriptif d’état des lieux en plus court et synthétique. Garde exactement le même format (Élément — État : … — description).'
+    : mode==='detaille'
+      ? 'Réécris ce descriptif d’état des lieux de façon plus détaillée et précise, sans inventer d’éléments non mentionnés. Garde exactement le même format.'
+      : 'Reformule ce descriptif d’état des lieux différemment (autre tournure), même sens et même format.';
+  const contents=[{parts:[{text: instr + '\n\nDescriptif :\n' + current + '\n\nRenvoie uniquement le descriptif réécrit, sans commentaire.'}]}];
+  runRequest(contents, btn, 'Réécriture…');
+}
+
+async function loadQuota(){
+  const backend=backendURL(); const license=(localStorage.getItem(LS.license)||'').trim();
+  if(!backend || !license){ $('quota').textContent=''; return; }
+  try{
+    const res=await fetch(backend+'/me',{ headers:{'X-License':license} });
+    const d=await res.json();
+    if(res.ok && d.valid){
+      $('quota').textContent = (d.plan==='admin' || d.remaining>1000000) ? '∞ Analyses illimitées' : ('Analyses restantes : '+d.remaining);
+    } else { $('quota').textContent=''; }
+  }catch(e){ $('quota').textContent=''; }
+}
 function showResult(text){
   $('result').textContent=text; $('resultCard').style.display='block'; refreshClear();
   $('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
@@ -308,13 +346,15 @@ function showError(m){ const e=$('error'); e.textContent=m; e.classList.add('sho
 function hideError(){ $('error').classList.remove('show'); }
 function openSettings(force){
   $('license').value=localStorage.getItem(LS.license)||'';
+  $('model').value=currentModel();
   $('overlay').classList.add('show');
   if(force) showError('Colle d’abord ta clé d’accès dans ⚙️.');
 }
 function closeSettings(){ $('overlay').classList.remove('show'); }
 function saveSettings(){
   localStorage.setItem(LS.license,$('license').value.trim());
-  closeSettings(); hideError(); checkBanner();
+  localStorage.setItem(LS.model,$('model').value);
+  closeSettings(); hideError(); checkBanner(); loadQuota();
 }
 function checkBanner(){
   const b=$('banner');
@@ -335,12 +375,15 @@ $('analyze').onclick=analyze;
 $('clearAll').onclick=clearAll;
 $('copyBtn').onclick=e=>copyText($('result').textContent,e.currentTarget);
 $('addReport').onclick=addToReport;
+$('rfShort').onclick=e=>reformulate('court',e.currentTarget);
+$('rfLong').onclick=e=>reformulate('detaille',e.currentTarget);
+$('rfAlt').onclick=e=>reformulate('reformule',e.currentTarget);
 $('copyReport').onclick=e=>copyText(reportToText(getReport()),e.currentTarget);
 $('clearReport').onclick=clearReport;
 $('ver').textContent=APP_VERSION;
 $('forceUpdate').onclick=e=>{ e.preventDefault(); location.replace(location.pathname+'?u='+Date.now()); };
 
-renderRooms(); renderChips(); renderReport(); checkBanner();
+renderRooms(); renderChips(); renderReport(); checkBanner(); loadQuota();
 const last=localStorage.getItem(LS.last);
 if(last){ $('result').textContent=last; $('resultCard').style.display='block'; refreshClear(); }
 </script>
