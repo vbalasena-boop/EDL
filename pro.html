@@ -201,7 +201,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst' };
-const APP_VERSION = '1.8';
+const APP_VERSION = '1.9';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -235,7 +235,7 @@ const ELEMENTS = [
   { id:'vaisselle', label:'Vaisselle', desc:'la vaisselle, les ustensiles et le petit électroménager' },
   { id:'luminaire', label:'Luminaire', desc:'le ou les luminaires' },
   { id:'piece', label:'Pièce entière', desc:'tous les éléments visibles de la pièce', full:true },
-  { id:'inventaire', label:'🛋️ Inventaire meublé', desc:'l’inventaire du mobilier et des équipements', inventory:true },
+  { id:'inventaire', label:'Inventaire meublé', desc:'l’inventaire du mobilier et des équipements', inventory:true },
 ];
 
 let selectedEl   = localStorage.getItem(LS.el)   || 'mur';
@@ -251,7 +251,7 @@ function buildPrompt(elId, roomId){
   const room = ROOMS.find(r => r.id === (roomId||selectedRoom));
   const roomTxt = room ? ` (pièce : ${room.label})` : '';
   if(el.inventory){
-    return `Tu es un expert en états des lieux de location meublée. Les photos montrent le mobilier et les équipements${roomTxt}, éventuellement sous plusieurs angles. Dresse l'INVENTAIRE : liste chaque meuble et équipement visible avec sa QUANTITÉ et son état. Une ligne par objet, au format : Objet (type/matière si utile) — Quantité : N — État : Mauvais / État d'usage / Bon / Très bon, suivi — seulement s'il y a un défaut — d'un tiret puis d'une courte description (usure, taches, casse…). Regroupe les objets identiques (ex : 4 chaises → une seule ligne, Quantité : 4). Ne liste PAS les murs, sols, plafonds ni plinthes. N'ajoute aucune mention de fonctionnement. N'invente rien, pas d'introduction ni de conclusion. En français.`;
+    return `Tu es un expert en états des lieux de location meublée. Les photos montrent le mobilier et les équipements${roomTxt}, éventuellement sous plusieurs angles. Dresse l'INVENTAIRE : liste chaque meuble et équipement visible avec sa QUANTITÉ et son état. Une ligne par objet, au format : Objet (type/matière si utile) — Quantité : N — État : Mauvais / État d'usage / Bon / Très bon, suivi — seulement s'il y a un défaut — d'un tiret puis d'une courte description (usure, taches, casse…). Regroupe les objets identiques (ex : 4 chaises → une seule ligne, Quantité : 4). Ne liste PAS les murs, sols, plafonds ni plinthes. N'ajoute aucune mention de fonctionnement. N'utilise aucun émoji ni symbole décoratif. N'invente rien, pas d'introduction ni de conclusion. En français.`;
   }
   const cible = el.desc; const full = el.full === true;
   const intro = full
@@ -263,7 +263,7 @@ intro +
 `Une ligne courte par élément : « Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon », suivi — seulement s'il y a un défaut — d'un tiret puis d'une description concise. `+
 `Décris avec l'œil d'un professionnel ce qui justifie l'état : usure, rayures, taches, saleté, poussière, traces, fissures, éclats, moisissures… en le situant. Si l'élément est propre et sans défaut, n'écris RIEN après l'état (ni « Néant », ni « RAS », ni « Observation »). `+
 `N'ajoute JAMAIS d'indication de fonctionnement, ni de champ « Propreté », ni de champ « Observation » : la propreté se dit directement dans la description. `+
-`N'indique pas la matière pour les appareils électriques et électroniques. Juge avec neutralité, sans indulgence ni sévérité systématique. N'invente rien, pas d'introduction ni de conclusion. En français.`
+`N'indique pas la matière pour les appareils électriques et électroniques. Juge avec neutralité, sans indulgence ni sévérité systématique. N'utilise aucun émoji ni symbole décoratif. N'invente rien, pas d'introduction ni de conclusion. En français.`
   );
 }
 
@@ -376,7 +376,7 @@ async function loadQuota(){
   }catch(e){ $('quota').textContent=''; }
 }
 function showResult(text){
-  $('result').textContent=text; $('resultCard').style.display='block'; refreshClear();
+  $('result').textContent=cleanText(text); $('resultCard').style.display='block'; refreshClear();
   $('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function copyText(txt,btn){
@@ -390,7 +390,9 @@ function addToReport(){
   const a=getReport(); a.push({t:currentLabel(),b:txt}); saveReport(a);
   const b=$('addReport'); const old=b.innerHTML; b.innerHTML='✅ Ajouté'; setTimeout(()=>b.innerHTML=old,1500);
 }
-function reportToText(a){ return a.map(e=>'=== '+e.t+' ===\n'+e.b).join('\n\n'); }
+const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{200D}]/gu;
+function cleanText(s){ return (s||'').replace(EMOJI_RE,'').replace(/[ \t]+/g,' ').replace(/ +\n/g,'\n').trim(); }
+function reportToText(a){ return a.map(e=>cleanText(e.t).toUpperCase()+'\n'+cleanText(e.b)).join('\n\n'); }
 function renderReport(){ const a=getReport(); $('reportCount').textContent=a.length; $('reportText').textContent=reportToText(a); $('reportCard').style.display=a.length?'block':'none'; }
 function clearReport(){ if(getReport().length && !confirm('Vider tout le rapport ?'))return; saveReport([]); }
 function clearAll(){ photos=[]; renderThumbs(); $('result').textContent=''; $('resultCard').style.display='none'; localStorage.removeItem(LS.last); hideError(); refreshClear(); }
