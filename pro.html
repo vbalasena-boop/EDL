@@ -96,6 +96,25 @@
     font-size:16px;background:var(--bg);color:var(--text);-webkit-appearance:none}
   .footnote{text-align:center;font-size:12px;color:var(--muted);margin-top:8px}
   .footnote a{color:var(--accent)}
+  /* Caméra intégrée */
+  .cam{position:fixed;inset:0;z-index:200;background:#000;display:none;flex-direction:column}
+  .cam.show{display:flex}
+  .cam video{flex:1;width:100%;height:100%;object-fit:cover;background:#000}
+  .cam .camtop{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;
+    padding:calc(12px + env(safe-area-inset-top)) 16px 12px;color:#fff}
+  .cam .camtop button{background:rgba(0,0,0,.45);color:#fff;border:none;border-radius:20px;padding:9px 15px;
+    font-size:14px;font-weight:700;cursor:pointer}
+  .cam .cambadge{background:rgba(0,0,0,.45);border-radius:20px;padding:9px 14px;font-size:14px;font-weight:700}
+  .cam .cambar{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:space-around;
+    padding:18px 24px calc(22px + env(safe-area-inset-bottom))}
+  .cam .shutter{width:74px;height:74px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.55);
+    cursor:pointer;box-shadow:0 0 0 2px rgba(0,0,0,.2)}
+  .cam .shutter:active{transform:scale(.92)}
+  .cam .flip,.cam .done{min-width:64px;text-align:center;background:rgba(0,0,0,.45);color:#fff;border:none;
+    border-radius:22px;padding:12px 14px;font-size:14px;font-weight:700;cursor:pointer}
+  .cam .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+  .cam .flash.go{animation:camflash .25s ease}
+  @keyframes camflash{0%{opacity:.85}100%{opacity:0}}
 </style>
 </head>
 <body>
@@ -120,11 +139,11 @@
 
   <div class="card">
     <p class="label">3. Photos</p>
-    <button class="photobtn" id="takePhoto">📷 &nbsp;Prendre une photo</button>
+    <button class="photobtn" id="takePhoto">📷 &nbsp;Prendre des photos</button>
     <button class="galbtn" id="addPhotos">🖼️ &nbsp;Choisir dans la galerie</button>
     <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
     <input type="file" id="fileInput" accept="image/*" multiple hidden>
-    <div class="hint">📸 Pour aller vite : prends plusieurs photos d'affilée avec l'app Appareil photo, puis importe-les toutes via 🖼️ la galerie (aucune confirmation à chaque photo). Ou « Prendre une photo » pour en ajouter une à une.</div>
+    <div class="hint">📸 Appuie sur « Prendre des photos » : l'appareil s'ouvre dans l'app et tu enchaînes les clichés (bouton central) sans confirmer à chaque fois. « ✓ Terminé » quand tu as fini. 🔄 pour changer d'objectif (avant/arrière).</div>
     <div id="thumbs"></div>
     <div class="count" id="count"></div>
   </div>
@@ -185,13 +204,6 @@
         <option value="gemini-2.5-flash">Meilleure qualité (plus lent)</option>
       </select>
     </div>
-    <div class="field">
-      <label>Rafale caméra</label>
-      <select id="burst">
-        <option value="0">Non — une photo à la fois</option>
-        <option value="1">Oui — rouvrir la caméra après chaque photo</option>
-      </select>
-    </div>
     <button class="btn" id="saveSettings">Enregistrer</button>
     <button class="btn sec" id="closeSettings" style="margin-top:10px">Fermer</button>
     <p class="footnote" style="margin-top:16px">Version <span id="ver"></span> · <a href="#" id="forceUpdate">↻ Forcer la mise à jour</a></p>
@@ -201,8 +213,8 @@
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
-const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst' };
-const APP_VERSION = '2.0';
+const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
+const APP_VERSION = '2.1';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -448,7 +460,6 @@ function hideError(){ $('error').classList.remove('show'); }
 function openSettings(force){
   $('license').value=localStorage.getItem(LS.license)||'';
   $('model').value=currentModel();
-  $('burst').value=localStorage.getItem(LS.burst)==='1'?'1':'0';
   $('overlay').classList.add('show');
   if(force) showError('Colle d’abord ta clé d’accès dans ⚙️.');
 }
@@ -456,7 +467,6 @@ function closeSettings(){ $('overlay').classList.remove('show'); }
 function saveSettings(){
   localStorage.setItem(LS.license,$('license').value.trim());
   localStorage.setItem(LS.model,$('model').value);
-  localStorage.setItem(LS.burst,$('burst').value);
   closeSettings(); hideError(); checkBanner(); loadQuota();
 }
 function checkBanner(){
@@ -470,16 +480,50 @@ $('openSettings').onclick=()=>openSettings(false);
 $('closeSettings').onclick=closeSettings;
 $('saveSettings').onclick=saveSettings;
 $('overlay').onclick=e=>{ if(e.target===$('overlay'))closeSettings(); };
-$('takePhoto').onclick=()=>$('cameraInput').click();
+// ---- Caméra intégrée (aperçu direct, rafale sans confirmation) ----
+let camStream=null, camShots=0;
+let camFacing = localStorage.getItem(LS.camface) || 'environment';
+function pushJpeg(b64){ photos.push({b64,url:'data:image/jpeg;base64,'+b64}); renderThumbs(); }
+function updateCamCount(){ $('camCount').textContent = camShots + ' photo' + (camShots>1?'s':''); }
+async function startCamStream(){
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  camStream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:{ ideal:camFacing }, width:{ ideal:1920 }, height:{ ideal:1080 } }, audio:false });
+  $('camVideo').srcObject = camStream;
+}
+async function openCamera(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ $('cameraInput').click(); return; }
+  camShots=0; updateCamCount();
+  try{ await startCamStream(); }
+  catch(err){ $('cameraInput').click(); return; }   // permission refusée / pas de caméra → appareil natif
+  $('cam').classList.add('show');
+}
+function camCapture(){
+  const v=$('camVideo'); if(!v.videoWidth) return;
+  let w=v.videoWidth, h=v.videoHeight; const maxSize=1024;
+  if(Math.max(w,h)>maxSize){ const r=maxSize/Math.max(w,h); w=Math.round(w*r); h=Math.round(h*r); }
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  cv.getContext('2d').drawImage(v,0,0,w,h);
+  pushJpeg(cv.toDataURL('image/jpeg',0.68).split(',')[1]);
+  camShots++; updateCamCount();
+  const f=$('camFlash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+}
+async function camFlip(){
+  camFacing = camFacing==='environment' ? 'user' : 'environment';
+  localStorage.setItem(LS.camface, camFacing);
+  try{ await startCamStream(); }catch(_){}
+}
+function closeCamera(){
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  $('camVideo').srcObject=null; $('cam').classList.remove('show');
+}
+$('takePhoto').onclick=openCamera;
+$('camShot').onclick=camCapture;
+$('camFlip').onclick=camFlip;
+$('camDone').onclick=closeCamera;
+$('camClose').onclick=closeCamera;
 $('addPhotos').onclick=()=>$('fileInput').click();
-$('cameraInput').onchange=async e=>{
-  const had = e.target.files && e.target.files.length;
-  await addFiles(e.target.files);
-  e.target.value='';
-  if(had && localStorage.getItem(LS.burst)==='1'){
-    setTimeout(()=>{ try{ $('cameraInput').click(); }catch(_){} }, 300);
-  }
-};
+$('cameraInput').onchange=async e=>{ await addFiles(e.target.files); e.target.value=''; };
 $('fileInput').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
 $('analyze').onclick=analyze;
 $('clearAll').onclick=clearAll;
@@ -501,5 +545,18 @@ renderRooms(); renderChips(); renderReport(); refreshQueue(); checkBanner(); loa
 const last=localStorage.getItem(LS.last);
 if(last){ $('result').textContent=last; $('resultCard').style.display='block'; refreshClear(); }
 </script>
+<div class="cam" id="cam">
+  <video id="camVideo" autoplay playsinline muted></video>
+  <div class="flash" id="camFlash"></div>
+  <div class="camtop">
+    <button id="camClose">✕ Fermer</button>
+    <span class="cambadge" id="camCount">0 photo</span>
+  </div>
+  <div class="cambar">
+    <button class="flip" id="camFlip">🔄 Objectif</button>
+    <button class="shutter" id="camShot" aria-label="Prendre la photo"></button>
+    <button class="done" id="camDone">✓ Terminé</button>
+  </div>
+</div>
 </body>
 </html>
