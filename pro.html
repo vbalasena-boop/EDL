@@ -194,7 +194,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model' };
-const APP_VERSION = '1.4';
+const APP_VERSION = '1.5';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -265,7 +265,7 @@ function fileToJpegBase64(file,maxSize){
   return new Promise((resolve,reject)=>{ const url=URL.createObjectURL(file); const img=new Image();
     img.onload=()=>{ let {width:w,height:h}=img; if(Math.max(w,h)>maxSize){const r=maxSize/Math.max(w,h);w=Math.round(w*r);h=Math.round(h*r);}
       const cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h);
-      URL.revokeObjectURL(url); resolve(cv.toDataURL('image/jpeg',0.8).split(',')[1]); };
+      URL.revokeObjectURL(url); resolve(cv.toDataURL('image/jpeg',0.72).split(',')[1]); };
     img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Image illisible'));}; img.src=url; });
 }
 async function addFiles(list){
