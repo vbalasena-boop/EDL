@@ -228,7 +228,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '2.2';
+const APP_VERSION = '2.3';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -506,10 +506,25 @@ async function startCamStream(){
   $('camVideo').srcObject = camStream;
 }
 async function openCamera(){
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ $('cameraInput').click(); return; }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    showError("Caméra intégrée non disponible sur ce navigateur. J’ouvre l’appareil photo classique.");
+    $('cameraInput').click(); return;
+  }
   camShots=0; updateCamCount();
-  try{ await startCamStream(); }
-  catch(err){ $('cameraInput').click(); return; }   // permission refusée / pas de caméra → appareil natif
+  try{
+    await startCamStream();
+  }catch(err){
+    const n = (err && err.name) || '';
+    if(n==='NotAllowedError' || n==='SecurityError'){
+      showError("Caméra bloquée. Autorise-la : appuie sur le cadenas / ⋮ dans Chrome → Autorisations du site → Caméra → Autoriser. Vérifie aussi que la caméra est activée pour Chrome dans les réglages Android. (Sinon utilise « Choisir dans la galerie ».)");
+    }else if(n==='NotFoundError' || n==='OverconstrainedError'){
+      showError("Aucune caméra utilisable détectée. Utilise « Choisir dans la galerie ».");
+    }else{
+      showError("Caméra indisponible ("+(n||'inconnu')+"). J’ouvre l’appareil photo classique.");
+      $('cameraInput').click();
+    }
+    return;
+  }
   $('cam').classList.add('show');
 }
 function camCapture(){
