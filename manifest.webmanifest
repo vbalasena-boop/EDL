@@ -1,12 +1,12 @@
 {
-  "name": "EDL IA Pro",
-  "short_name": "EDL IA Pro",
+  "name": "Immoscan",
+  "short_name": "Immoscan",
   "description": "États des lieux assistés par IA — descriptifs prêts à coller dans Nockee.",
   "start_url": "./pro.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f4f4f7",
+  "background_color": "#f6f5fb",
   "theme_color": "#7c3aed",
   "lang": "fr",
   "icons": [
