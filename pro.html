@@ -228,7 +228,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '2.3';
+const APP_VERSION = '2.4';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -503,7 +503,14 @@ async function startCamStream(){
   if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
   camStream = await navigator.mediaDevices.getUserMedia({
     video:{ facingMode:{ ideal:camFacing }, width:{ ideal:1920 }, height:{ ideal:1080 } }, audio:false });
-  $('camVideo').srcObject = camStream;
+  const v=$('camVideo');
+  v.srcObject = camStream;
+  v.setAttribute('playsinline',''); v.muted = true;
+  try{ await v.play(); }catch(_){}
+  // iOS : attendre que la vidéo ait ses dimensions avant d'autoriser la capture
+  if(!v.videoWidth){
+    await new Promise(res=>{ const done=()=>res(); v.addEventListener('loadedmetadata',done,{once:true}); setTimeout(done,1800); });
+  }
 }
 async function openCamera(){
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
@@ -528,7 +535,8 @@ async function openCamera(){
   $('cam').classList.add('show');
 }
 function camCapture(){
-  const v=$('camVideo'); if(!v.videoWidth) return;
+  const v=$('camVideo');
+  if(!v.videoWidth){ const b=$('camCount'); const o=b.textContent; b.textContent='Caméra en cours…'; setTimeout(()=>{ if(b.textContent==='Caméra en cours…') b.textContent=o; },1000); return; }
   let w=v.videoWidth, h=v.videoHeight; const maxSize=1024;
   if(Math.max(w,h)>maxSize){ const r=maxSize/Math.max(w,h); w=Math.round(w*r); h=Math.round(h*r); }
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
