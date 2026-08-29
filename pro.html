@@ -123,7 +123,7 @@
     <button class="galbtn" id="addPhotos">🖼️ &nbsp;Choisir dans la galerie</button>
     <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
     <input type="file" id="fileInput" accept="image/*" multiple hidden>
-    <div class="hint">Prends autant de photos que tu veux — appuie à nouveau et elles s'ajoutent à la suite.</div>
+    <div class="hint">📸 Pour aller vite : prends plusieurs photos d'affilée avec l'app Appareil photo, puis importe-les toutes via 🖼️ la galerie (aucune confirmation à chaque photo). Ou « Prendre une photo » pour en ajouter une à une.</div>
     <div id="thumbs"></div>
     <div class="count" id="count"></div>
   </div>
@@ -194,7 +194,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model' };
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -222,7 +222,13 @@ const ELEMENTS = [
   { id:'evier', label:'Évier', desc:"l'évier et sa robinetterie" },
   { id:'sanitaire', label:'WC/Sanitaire', desc:'les sanitaires (WC, lavabo, douche, baignoire)' },
   { id:'equip', label:'Équipement', desc:"le ou les équipements / électroménager visibles" },
+  { id:'canape', label:'Canapé', desc:'le ou les canapés et fauteuils' },
+  { id:'lit', label:'Lit/Literie', desc:'le lit, le matelas et la literie' },
+  { id:'table', label:'Table & chaises', desc:'la table et les chaises' },
+  { id:'vaisselle', label:'Vaisselle', desc:'la vaisselle, les ustensiles et le petit électroménager' },
+  { id:'luminaire', label:'Luminaire', desc:'le ou les luminaires' },
   { id:'piece', label:'Pièce entière', desc:'tous les éléments visibles de la pièce', full:true },
+  { id:'inventaire', label:'🛋️ Inventaire meublé', desc:'l’inventaire du mobilier et des équipements', inventory:true },
 ];
 
 let selectedEl   = localStorage.getItem(LS.el)   || 'mur';
@@ -237,6 +243,9 @@ function buildPrompt(elId, roomId){
   const el = ELEMENTS.find(e => e.id === (elId||selectedEl)) || ELEMENTS[0];
   const room = ROOMS.find(r => r.id === (roomId||selectedRoom));
   const roomTxt = room ? ` (pièce : ${room.label})` : '';
+  if(el.inventory){
+    return `Tu es un expert en états des lieux de location meublée. Les photos montrent le mobilier et les équipements${roomTxt}, éventuellement sous plusieurs angles. Dresse l'INVENTAIRE : liste chaque meuble et équipement visible avec sa QUANTITÉ et son état. Une ligne par objet, au format : Objet (type/matière si utile) — Quantité : N — État : Mauvais / État d'usage / Bon / Très bon, suivi — seulement s'il y a un défaut — d'un tiret puis d'une courte description (usure, taches, casse…). Regroupe les objets identiques (ex : 4 chaises → une seule ligne, Quantité : 4). Ne liste PAS les murs, sols, plafonds ni plinthes. N'ajoute aucune mention de fonctionnement. N'invente rien, pas d'introduction ni de conclusion. En français.`;
+  }
   const cible = el.desc; const full = el.full === true;
   const intro = full
     ? `Tu es un expert en états des lieux immobiliers. Les photos montrent une pièce${roomTxt}, éventuellement sous plusieurs angles. Décris TOUS les éléments visibles (murs, sol, plafond, plinthes, portes, fenêtres, menuiseries, équipements, meubles fixes…), sans en omettre. `
