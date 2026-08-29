@@ -9,7 +9,13 @@
  * Réglages à définir dans le tableau de bord Cloudflare :
  *   - Variable secrète  GEMINI_KEY   = ta clé Google Gemini (AIza...)
  *   - Namespace KV       LICENSES     = stocke les clés d'accès des clients
- *   - Variable (option)  ALLOW_ORIGIN = l'URL de ton app (sinon "*" en test)
+ *   - Variable           ALLOW_ORIGIN = l'URL de ton app (ex : https://vbalasena-boop.github.io)
+ *                                       Recommandé : active le verrou d'origine (#3).
+ *                                       Laisse vide/"*" seulement en test.
+ *
+ * Sécurité incluse :
+ *   #2 Limite de débit : 20 analyses / minute par clé (protège la facture IA).
+ *   #3 Verrou d'origine : si ALLOW_ORIGIN ≠ "*", la clé ne marche que depuis ton app.
  *
  * Une entrée LICENSES : clé = la clé d'accès du client ; valeur (JSON) =
  *   { "plan":"mensuel", "limit":100000, "used":0, "expires":"2027-01-01" }
@@ -34,6 +40,15 @@ export default {
     const json = (obj, status = 200) =>
       new Response(JSON.stringify(obj), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
+    // #3 Verrou d'origine : si ALLOW_ORIGIN est défini (≠ "*"), la clé ne
+    // fonctionne que depuis ton app. Un Origin absent (appel non-navigateur) ou
+    // différent est refusé. (Protection contre les autres sites/apps ; un client
+    // non-navigateur peut toujours forger l'en-tête — d'où la clé d'accès en plus.)
+    if (origin !== '*') {
+      const reqOrigin = request.headers.get('Origin') || '';
+      if (reqOrigin !== origin) return json({ error: 'Origine non autorisée.' }, 403);
+    }
+
     const license = (request.headers.get('X-License') || '').trim();
     if (!license) return json({ error: 'Clé d’accès manquante.' }, 401);
 
@@ -55,6 +70,16 @@ export default {
 
     if (request.method !== 'POST') return json({ error: 'Méthode non autorisée.' }, 405);
     if (remaining <= 0) return json({ error: 'Quota atteint. Renouvelle ton abonnement.' }, 402);
+
+    // #2 Limite de débit : 20 analyses / minute par clé (protège ta facture IA).
+    // Fenêtre fixe d'une minute, stockée dans KV avec expiration auto (~2 min).
+    const RL_MAX = 20;
+    const rlKey = 'rl:' + license + ':' + Math.floor(Date.now() / 60000);
+    let rlCount = 0;
+    try { rlCount = parseInt(await env.LICENSES.get(rlKey)) || 0; } catch (e) {}
+    if (rlCount >= RL_MAX)
+      return json({ error: 'Trop de requêtes. Patiente une minute avant de relancer.' }, 429);
+    try { await env.LICENSES.put(rlKey, String(rlCount + 1), { expirationTtl: 120 }); } catch (e) {}
 
     // Corps envoyé par l'app : { model, contents, generationConfig }
     let payload;

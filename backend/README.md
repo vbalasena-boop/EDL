@@ -29,9 +29,15 @@ Tout se fait depuis le **tableau de bord Cloudflare** (gratuit), sans terminal.
 ## Étape 5 — Mettre ta clé Gemini en secret
 1. Même écran **Settings** → **Variables and Secrets** → **Add**.
 2. **Type : Secret** — **Name** : `GEMINI_KEY` — **Value** : ta clé Google Gemini.
-3. (Optionnel) Ajoute une variable **`ALLOW_ORIGIN`** = l'adresse de ton app
-   (ex : `https://vbalasena-boop.github.io`). Laisse vide/`*` pendant les tests.
+3. **(Recommandé — sécurité)** Ajoute une variable **`ALLOW_ORIGIN`** = l'adresse de ton app,
+   soit exactement **`https://vbalasena-boop.github.io`** (sans barre finale, sans `/EDL`).
+   → Active le **verrou d'origine** : la clé ne fonctionne plus que depuis ton app.
+   Laisse vide/`*` uniquement pendant les tests.
 4. Enregistre / Deploy.
+
+### Sécurité incluse dans le Worker
+- **Limite de débit** : 20 analyses / minute par clé (protège ta facture Gemini contre un emballement). Au-delà, le serveur répond « Trop de requêtes » pendant ~1 min.
+- **Verrou d'origine** : actif dès que `ALLOW_ORIGIN` est renseigné (voir ci-dessus).
 
 ## Étape 6 — Créer une clé d'accès de test
 1. **Workers & Pages** → **KV** → ouvre **`LICENSES`** → **Add entry** :
