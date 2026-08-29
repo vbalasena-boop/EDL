@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Immoscan — États des lieux assistés par IA</title>
+<meta name="description" content="Immoscan rédige vos états des lieux à partir de photos : descriptifs d'expert prêts à coller dans Nockee. Essai gratuit, sans carte.">
+<meta name="theme-color" content="#7c3aed">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<style>
+  :root{
+    --bg:#ffffff; --bg2:#f6f5fb; --tint:#eceafe; --card:#ffffff; --text:#17161d; --muted:#5f5e6e;
+    --line:#e9e8f0; --accent:#7c3aed; --accent2:#4f46e5; --grad:linear-gradient(135deg,#7c3aed,#4f46e5);
+    --good:#16a34a; --shadow:0 2px 10px rgba(60,40,120,.06); --shadow-lg:0 18px 44px rgba(80,50,160,.16);
+    --radius:20px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0f0e14; --bg2:#131120; --tint:#1b1730; --card:#1a1922; --text:#f2f1f7; --muted:#a0a0b2;
+      --line:#2a2836; --accent:#a78bfa; --accent2:#818cf8; --grad:linear-gradient(135deg,#8b5cf6,#6366f1);
+      --shadow:0 2px 12px rgba(0,0,0,.5); --shadow-lg:0 18px 44px rgba(0,0,0,.6); }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);line-height:1.55;
+    font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  img,svg{max-width:100%}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  /* Header */
+  header.nav{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav .row{display:flex;align-items:center;justify-content:space-between;gap:16px;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+  .brand .logo{width:36px;height:36px;border-radius:10px;box-shadow:var(--shadow)}
+  .brand b{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .navlinks{display:flex;align-items:center;gap:22px}
+  .navlinks a{color:var(--muted);font-weight:700;font-size:15px}
+  .navlinks a:hover{color:var(--text)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;
+    font-family:inherit;font-weight:800;font-size:16px;padding:14px 22px;border-radius:14px;color:#fff;
+    background:var(--grad);box-shadow:0 6px 18px rgba(124,58,237,.30);transition:.14s}
+  .btn:hover{filter:brightness(1.05);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn.sm{padding:10px 16px;font-size:14.5px;border-radius:12px}
+  .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:none}
+  .btn.block{width:100%}
+  @media(max-width:760px){ .navlinks a.hide{display:none} }
+  /* Hero */
+  .hero{position:relative;overflow:hidden;
+    background:radial-gradient(900px 500px at 85% -20%,var(--tint),transparent 60%),
+               radial-gradient(700px 420px at -10% 0%,var(--tint),transparent 55%),var(--bg)}
+  .hero .in{display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center;padding:64px 0 56px}
+  @media(max-width:860px){ .hero .in{grid-template-columns:1fr;gap:32px;padding:44px 0 40px} }
+  .pill{display:inline-flex;align-items:center;gap:7px;background:var(--tint);color:var(--accent2);
+    font-weight:700;font-size:13px;padding:7px 13px;border-radius:999px;margin-bottom:18px}
+  h1{font-size:clamp(30px,5vw,46px);line-height:1.08;letter-spacing:-.03em;margin:0 0 16px;font-weight:800}
+  h1 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .lead{font-size:18px;color:var(--muted);margin:0 0 26px;max-width:34ch}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .note{font-size:13px;color:var(--muted);margin-top:14px}
+  /* Aperçu rapport */
+  .preview{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow-lg);padding:18px;transform:rotate(.4deg)}
+  .preview .top{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:700;
+    text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+  .preview .dot{width:9px;height:9px;border-radius:50%;background:var(--grad)}
+  .preview pre{margin:0;white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.5}
+  .preview .k{font-weight:800}
+  .preview .st{color:var(--good);font-weight:800}
+  /* Sections */
+  section{padding:64px 0}
+  .kicker{color:var(--accent);font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px}
+  h2{font-size:clamp(24px,4vw,34px);letter-spacing:-.02em;margin:0 0 12px;font-weight:800}
+  .sub{color:var(--muted);font-size:17px;margin:0 0 34px;max-width:60ch}
+  .grid{display:grid;gap:18px}
+  .cols3{grid-template-columns:repeat(3,1fr)}
+  .cols4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:900px){ .cols3,.cols4{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:560px){ .cols3,.cols4{grid-template-columns:1fr} }
+  .feat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .feat .ic{width:44px;height:44px;border-radius:12px;background:var(--tint);display:flex;align-items:center;
+    justify-content:center;font-size:22px;margin-bottom:14px}
+  .feat h3{margin:0 0 6px;font-size:18px;font-weight:800}
+  .feat p{margin:0;color:var(--muted);font-size:15px}
+  /* Steps */
+  .steps{counter-reset:s}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 22px;box-shadow:var(--shadow);position:relative}
+  .step .n{counter-increment:s;width:34px;height:34px;border-radius:10px;background:var(--grad);color:#fff;
+    font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .step .n::before{content:counter(s)}
+  .step h3{margin:0 0 6px;font-size:17px;font-weight:800}
+  .step p{margin:0;color:var(--muted);font-size:15px}
+  /* Tarifs */
+  #tarifs{background:var(--bg2)}
+  .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:stretch}
+  @media(max-width:960px){ .plans{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:560px){ .plans{grid-template-columns:1fr} }
+  .plan{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 20px;
+    box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .plan.pop{border:2px solid var(--accent);box-shadow:var(--shadow-lg);position:relative}
+  .plan.pop .tag{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;
+    font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;white-space:nowrap}
+  .plan h3{margin:0 0 4px;font-size:19px;font-weight:800}
+  .plan .price{font-size:34px;font-weight:800;letter-spacing:-.02em;margin:8px 0 2px}
+  .plan .price small{font-size:15px;font-weight:700;color:var(--muted)}
+  .plan .peri{color:var(--muted);font-size:13.5px;margin-bottom:16px}
+  .plan ul{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:9px;flex:1}
+  .plan li{font-size:14.5px;display:flex;gap:9px;align-items:flex-start}
+  .plan li::before{content:"✓";color:var(--good);font-weight:800;flex:none}
+  .planfoot{text-align:center;color:var(--muted);font-size:14px;margin-top:22px}
+  /* FAQ */
+  details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 18px;margin-bottom:12px}
+  summary{cursor:pointer;font-weight:800;font-size:16px;padding:14px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";color:var(--accent);font-size:22px;line-height:1}
+  details[open] summary::after{content:"–"}
+  details p{margin:0 0 14px;color:var(--muted);font-size:15px}
+  /* CTA band */
+  .band{background:var(--grad);border-radius:26px;padding:48px 32px;text-align:center;color:#fff;box-shadow:var(--shadow-lg)}
+  .band h2{color:#fff}
+  .band p{color:rgba(255,255,255,.9);max-width:48ch;margin:0 auto 26px;font-size:17px}
+  .band .btn{background:#fff;color:var(--accent2)}
+  .band .btn:hover{filter:none;background:#f3f0ff}
+  /* Footer */
+  footer{border-top:1px solid var(--line);padding:34px 0;color:var(--muted);font-size:14px}
+  .foot{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
+  footer a{color:var(--muted);font-weight:700}
+  footer a:hover{color:var(--text)}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap row">
+    <a class="brand" href="#">
+      <svg class="logo" viewBox="0 0 512 512" aria-hidden="true">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#4f46e5"/></linearGradient></defs>
+        <rect width="512" height="512" rx="116" fill="url(#lg)"/>
+        <polygon points="256,138 132,270 380,270" fill="#fff"/>
+        <rect x="186" y="258" width="140" height="140" rx="16" fill="#fff"/>
+        <rect x="236" y="326" width="50" height="72" rx="12" fill="url(#lg)"/>
+        <rect x="96" y="185" width="320" height="22" rx="11" fill="#efeafe"/>
+        <rect x="96" y="191" width="320" height="10" rx="5" fill="#fff"/>
+      </svg>
+      <span><b>Immoscan</b></span>
+    </a>
+    <nav class="navlinks">
+      <a class="hide" href="#fonctionnalites">Fonctionnalités</a>
+      <a class="hide" href="#etapes">Comment ça marche</a>
+      <a href="#tarifs">Tarifs</a>
+      <a class="btn sm" href="pro.html">Essayer gratuitement</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap in">
+    <div>
+      <span class="pill">🏠 Complément de Nockee — sans PDF ni signature à gérer</span>
+      <h1>Vos états des lieux <span class="g">rédigés par l'IA</span>, prêts à coller.</h1>
+      <p class="lead">Prenez vos photos, Immoscan décrit chaque élément avec l'œil d'un professionnel. Vous copiez le texte dans Nockee. C'est tout.</p>
+      <div class="cta">
+        <a class="btn" href="pro.html">Essai gratuit — 20 analyses</a>
+        <a class="btn ghost" href="#tarifs">Voir les tarifs</a>
+      </div>
+      <p class="note">Aucune carte bancaire pour l'essai · Fonctionne sur iPhone et Android · Hors-ligne géré</p>
+    </div>
+    <div class="preview" aria-hidden="true">
+      <div class="top"><span class="dot"></span> Chambre · Aperçu du descriptif</div>
+      <pre><span class="k">Murs</span> (peinture) — État : <span class="st">Bon</span>
+<span class="k">Sol</span> (parquet stratifié) — État : <span class="st">État d'usage</span> — rayures légères devant la fenêtre
+<span class="k">Plafond</span> — État : <span class="st">Bon</span>
+<span class="k">Fenêtre</span> (PVC) — État : <span class="st">Bon</span>
+<span class="k">Radiateur</span> — État : <span class="st">État d'usage</span> — traces de poussière</pre>
+    </div>
+  </div>
+</div>
+
+<!-- FONCTIONNALITÉS -->
+<section id="fonctionnalites" class="wrap">
+  <p class="kicker">Pensé pour le terrain</p>
+  <h2>Tout ce qu'il faut pour aller vite</h2>
+  <p class="sub">Immoscan se concentre sur la partie pénible : rédiger des descriptifs d'état précis, pièce par pièce.</p>
+  <div class="grid cols4">
+    <div class="feat"><div class="ic">📷</div><h3>Caméra rafale</h3><p>Enchaînez les photos d'un élément sans confirmer à chaque cliché. Objectif arrière par défaut.</p></div>
+    <div class="feat"><div class="ic">✍️</div><h3>Descriptif d'expert</h3><p>Format « Élément — État — défauts constatés », sobre et neutre, prêt à coller dans l'observation Nockee.</p></div>
+    <div class="feat"><div class="ic">🛋️</div><h3>Inventaire meublé</h3><p>Mode dédié aux locations meublées : chaque objet listé avec sa quantité et son état.</p></div>
+    <div class="feat"><div class="ic">📶</div><h3>Hors-ligne</h3><p>Pas de réseau dans le logement ? Les photos sont gardées et analysées automatiquement au retour d'internet.</p></div>
+  </div>
+</section>
+
+<!-- ETAPES -->
+<section id="etapes" class="wrap">
+  <p class="kicker">Simple</p>
+  <h2>En 3 étapes</h2>
+  <div class="grid cols3 steps">
+    <div class="step"><div class="n"></div><h3>Choisissez l'élément</h3><p>Pièce + élément (murs, sol, fenêtre…). Un mode « pièce entière » et un mode « inventaire » sont dispo.</p></div>
+    <div class="step"><div class="n"></div><h3>Prenez les photos</h3><p>Caméra intégrée, en rafale. Plusieurs angles si besoin — Immoscan ne décrit pas deux fois le même élément.</p></div>
+    <div class="step"><div class="n"></div><h3>Copiez dans Nockee</h3><p>Le descriptif s'affiche, vous ajustez d'un tap si besoin, puis « Copier ». Collez dans l'observation.</p></div>
+  </div>
+</section>
+
+<!-- TARIFS -->
+<section id="tarifs">
+  <div class="wrap">
+    <p class="kicker">Tarifs</p>
+    <h2>Un prix simple, une marge pour vous</h2>
+    <p class="sub">Sans engagement, résiliable à tout moment. Prix hors taxes. 1 état des lieux complet ≈ 10 à 15 analyses.</p>
+    <div class="plans">
+      <div class="plan">
+        <h3>Essai</h3>
+        <div class="price">0 €</div>
+        <div class="peri">pour tester sur un vrai EDL</div>
+        <ul>
+          <li>20 analyses offertes</li>
+          <li>Toutes les fonctionnalités</li>
+          <li>Sans carte bancaire</li>
+        </ul>
+        <a class="btn ghost block" href="pro.html">Commencer</a>
+      </div>
+      <div class="plan pop">
+        <span class="tag">★ Le plus choisi</span>
+        <h3>Solo</h3>
+        <div class="price">19 €<small> /mois</small></div>
+        <div class="peri">≈ 30 états des lieux / mois</div>
+        <ul>
+          <li>400 analyses par mois</li>
+          <li>Caméra rafale + inventaire meublé</li>
+          <li>Hors-ligne & mises à jour incluses</li>
+          <li>Support par email</li>
+        </ul>
+        <a class="btn block" href="#" data-plan="solo">Choisir Solo</a>
+      </div>
+      <div class="plan">
+        <h3>Pro</h3>
+        <div class="price">39 €<small> /mois</small></div>
+        <div class="peri">≈ 90 états des lieux / mois</div>
+        <ul>
+          <li>1 200 analyses par mois</li>
+          <li>Idéal gestion locative</li>
+          <li>Tout le plan Solo</li>
+          <li>Support prioritaire</li>
+        </ul>
+        <a class="btn ghost block" href="#" data-plan="pro">Choisir Pro</a>
+      </div>
+      <div class="plan">
+        <h3>Illimité</h3>
+        <div class="price">79 €<small> /mois</small></div>
+        <div class="peri">usage loyal, sans compteur</div>
+        <ul>
+          <li>Analyses illimitées</li>
+          <li>Pour agences & gros volumes</li>
+          <li>Tout le plan Pro</li>
+        </ul>
+        <a class="btn ghost block" href="#" data-plan="illimite">Choisir Illimité</a>
+      </div>
+    </div>
+    <p class="planfoot">Occasionnel ? <b>Pack 9 €</b> = 200 analyses valables 3 mois, sans abonnement · Paiement à l'année : <b>2 mois offerts</b>.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="wrap">
+  <p class="kicker">FAQ</p>
+  <h2>Questions fréquentes</h2>
+  <div style="max-width:760px">
+    <details open><summary>Immoscan remplace-t-il Nockee ?</summary><p>Non, c'est un complément. Nockee gère le document légal, la signature et l'envoi. Immoscan vous fait gagner du temps sur la partie descriptive : il rédige les observations que vous collez ensuite dans Nockee.</p></details>
+    <details><summary>Le descriptif est-il fiable ?</summary><p>C'est une suggestion générée par IA à partir de vos photos. Elle est conçue pour être neutre et précise, mais reste à vérifier et valider par le professionnel — vous gardez la main sur le texte final.</p></details>
+    <details><summary>Ça marche sans réseau dans le logement ?</summary><p>Oui. Vous prenez les photos hors-ligne, elles sont mises en file d'attente et analysées automatiquement dès que vous retrouvez internet.</p></details>
+    <details><summary>Puis-je résilier quand je veux ?</summary><p>Oui, les abonnements sont sans engagement et résiliables à tout moment. Vous gardez l'accès jusqu'à la fin de la période payée.</p></details>
+    <details><summary>Mes photos sont-elles conservées ?</summary><p>Les photos servent uniquement à générer le descriptif puis ne sont pas stockées sur nos serveurs. Le traitement passe par un serveur sécurisé qui ne conserve pas vos images.</p></details>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="wrap">
+  <div class="band">
+    <h2>Testez sur votre prochain état des lieux</h2>
+    <p>20 analyses offertes, sans carte. Vous verrez le temps gagné dès la première pièce.</p>
+    <a class="btn" href="pro.html">Démarrer gratuitement</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div class="brand" style="font-size:16px">
+      <svg class="logo" viewBox="0 0 512 512" aria-hidden="true" style="width:28px;height:28px">
+        <rect width="512" height="512" rx="116" fill="url(#lg)"/>
+        <polygon points="256,138 132,270 380,270" fill="#fff"/>
+        <rect x="186" y="258" width="140" height="140" rx="16" fill="#fff"/>
+        <rect x="236" y="326" width="50" height="72" rx="12" fill="url(#lg)"/>
+        <rect x="96" y="185" width="320" height="22" rx="11" fill="#efeafe"/>
+        <rect x="96" y="191" width="320" height="10" rx="5" fill="#fff"/>
+      </svg>
+      <span><b style="background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Immoscan</b></span>
+    </div>
+    <div>© <span id="year"></span> Immoscan · <a href="pro.html">Ouvrir l'app</a> · <a href="#tarifs">Tarifs</a></div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+  // Liens de paiement Stripe — colle ici les URLs de tes "Payment Links" Stripe.
+  // Laisse vide ("") tant que ce n'est pas prêt : le bouton affichera un message.
+  const STRIPE_LINKS = {
+    solo: "",
+    pro: "",
+    illimite: ""
+  };
+  document.querySelectorAll('[data-plan]').forEach(a=>{
+    a.addEventListener('click', e=>{
+      const url = STRIPE_LINKS[a.dataset.plan];
+      if(url){ location.href = url; }
+      else { e.preventDefault(); alert("Paiement bientôt disponible. En attendant, écrivez-nous pour recevoir votre accès."); }
+    });
+  });
+</script>
+</body>
+</html>
