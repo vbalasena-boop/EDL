@@ -74,6 +74,9 @@
   #reportText{max-height:280px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14.5px}
   .disclaimer{font-size:12.5px;color:var(--muted);margin:-4px 0 14px;line-height:1.4}
   .quota{font-size:12.5px;color:var(--muted);text-align:center;margin:2px 0 10px}
+  .qrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .qrow:last-child{border-bottom:none}
+  .qdel{border:none;background:transparent;color:var(--bad);font-size:20px;line-height:1;cursor:pointer;padding:0 4px}
   .msg{font-size:14px;padding:12px 14px;border-radius:12px;margin-bottom:16px;display:none}
   .msg.show{display:block}
   .msg.err{background:rgba(220,38,38,.1);color:var(--bad);border:1px solid rgba(220,38,38,.25)}
@@ -126,8 +129,16 @@
   </div>
 
   <button class="btn" id="analyze" disabled>✨ &nbsp;Analyser</button>
+  <button class="btn sec" id="queueAdd" style="margin-top:10px;display:none">🕓 &nbsp;Mettre en file (analyser plus tard)</button>
   <div class="quota" id="quota"></div>
   <button class="linkbtn" id="clearAll" style="display:none">🗑 Tout effacer (photos et résultat)</button>
+
+  <div class="card" id="queueCard" style="display:none">
+    <p class="label">🕓 File d'attente (<span id="queueCount">0</span>)</p>
+    <div id="queueList"></div>
+    <button class="btn" id="queueRun" style="margin-top:8px">▶️ &nbsp;Analyser toute la file</button>
+    <p class="hint">Sauvegardée sur ton téléphone — tu peux fermer l'app. L'analyse a besoin d'internet.</p>
+  </div>
 
   <div class="msg err" id="error"></div>
 
@@ -183,7 +194,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model' };
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.4';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -222,9 +233,9 @@ function currentLabel(){
   const r = ROOMS.find(x=>x.id===selectedRoom); const e = ELEMENTS.find(x=>x.id===selectedEl);
   return (r? r.label : '') + (e? ' · ' + e.label : '');
 }
-function buildPrompt(){
-  const el = ELEMENTS.find(e => e.id === selectedEl) || ELEMENTS[0];
-  const room = ROOMS.find(r => r.id === selectedRoom);
+function buildPrompt(elId, roomId){
+  const el = ELEMENTS.find(e => e.id === (elId||selectedEl)) || ELEMENTS[0];
+  const room = ROOMS.find(r => r.id === (roomId||selectedRoom));
   const roomTxt = room ? ` (pièce : ${room.label})` : '';
   const cible = el.desc; const full = el.full === true;
   const intro = full
@@ -269,7 +280,9 @@ function renderThumbs(){
     const x=document.createElement('button'); x.textContent='×'; x.onclick=()=>{photos.splice(i,1);renderThumbs();};
     d.appendChild(im); d.appendChild(x); t.appendChild(d); });
   $('count').textContent = photos.length ? photos.length+' photo(s) ajoutée(s)' : '';
-  $('analyze').disabled = photos.length===0; refreshClear();
+  $('analyze').disabled = photos.length===0;
+  $('queueAdd').style.display = photos.length ? 'block' : 'none';
+  refreshClear();
 }
 function refreshClear(){ $('clearAll').style.display=(photos.length||$('resultCard').style.display==='block')?'block':'none'; }
 
@@ -277,19 +290,24 @@ function backendURL(){ return (BACKEND_URL || localStorage.getItem(LS.backend) |
 
 function currentModel(){ return localStorage.getItem(LS.model) || 'gemini-flash-lite-latest'; }
 
+async function callGemini(contents){
+  const backend=backendURL(); const license=(localStorage.getItem(LS.license)||'').trim();
+  if(!backend || !license){ openSettings(true); throw new Error('Clé d’accès manquante.'); }
+  const res=await fetch(backend,{ method:'POST', headers:{'Content-Type':'application/json','X-License':license},
+    body:JSON.stringify({ model:currentModel(), contents, generationConfig:{temperature:0.2,maxOutputTokens:2048} }) });
+  const data=await res.json();
+  if(!res.ok) throw new Error(data.error || ('Erreur '+res.status));
+  const text=(data.text||'').trim();
+  if(!text) throw new Error('Réponse vide.');
+  return text;
+}
+
 async function runRequest(contents, btn, busyLabel){
-  const backend=backendURL();
-  const license=(localStorage.getItem(LS.license)||'').trim();
-  if(!backend || !license){ openSettings(true); return; }
+  if(!navigator.onLine){ showOffline('📴 Pas de réseau — réessaie dès le retour d’internet.'); return; }
   hideError();
   const old=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spinner"></span> &nbsp;'+(busyLabel||'…');
   try{
-    const res=await fetch(backend,{ method:'POST', headers:{'Content-Type':'application/json','X-License':license},
-      body:JSON.stringify({ model:currentModel(), contents, generationConfig:{temperature:0.2,maxOutputTokens:2048} }) });
-    const data=await res.json();
-    if(!res.ok) throw new Error(data.error || ('Erreur '+res.status));
-    const text=(data.text||'').trim();
-    if(!text) throw new Error('Réponse vide.');
+    const text=await callGemini(contents);
     showResult(text); localStorage.setItem(LS.last,text); loadQuota();
   }catch(err){ showError('Échec : '+err.message); }
   finally{ btn.innerHTML=old; btn.disabled=false; $('analyze').disabled=photos.length===0; }
@@ -313,8 +331,9 @@ function updateOnline(){
   if(navigator.onLine){
     hideOffline();
     if(pendingAnalyze){ pendingAnalyze=false; analyze(); }
+    if(pendingQueue){ pendingQueue=false; processQueue($('queueRun')); }
   } else {
-    showOffline('📴 Hors ligne — l’analyse a besoin d’internet. Tu peux prendre tes photos, elles sont gardées.');
+    showOffline('📴 Hors ligne — l’analyse a besoin d’internet. Tes photos sont gardées.');
   }
 }
 
@@ -359,6 +378,52 @@ function reportToText(a){ return a.map(e=>'=== '+e.t+' ===\n'+e.b).join('\n\n');
 function renderReport(){ const a=getReport(); $('reportCount').textContent=a.length; $('reportText').textContent=reportToText(a); $('reportCard').style.display=a.length?'block':'none'; }
 function clearReport(){ if(getReport().length && !confirm('Vider tout le rapport ?'))return; saveReport([]); }
 function clearAll(){ photos=[]; renderThumbs(); $('result').textContent=''; $('resultCard').style.display='none'; localStorage.removeItem(LS.last); hideError(); refreshClear(); }
+/* ---- File d'attente hors ligne (IndexedDB) ---- */
+const IDB_DB='edlpro_db', IDB_STORE='jobs';
+function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open(IDB_DB,1);
+  r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains(IDB_STORE)) r.result.createObjectStore(IDB_STORE,{keyPath:'id'}); };
+  r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+function idbPut(job){ return idb().then(db=>new Promise((res,rej)=>{ const t=db.transaction(IDB_STORE,'readwrite'); t.objectStore(IDB_STORE).put(job); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); })); }
+function idbAll(){ return idb().then(db=>new Promise((res,rej)=>{ const t=db.transaction(IDB_STORE,'readonly'); const q=t.objectStore(IDB_STORE).getAll(); q.onsuccess=()=>res((q.result||[]).sort((a,b)=>a.createdAt-b.createdAt)); q.onerror=()=>rej(q.error); })); }
+function idbDel(id){ return idb().then(db=>new Promise((res,rej)=>{ const t=db.transaction(IDB_STORE,'readwrite'); t.objectStore(IDB_STORE).delete(id); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); })); }
+
+let pendingQueue=false;
+async function addToQueue(){
+  if(!photos.length) return;
+  const job={ id:Date.now()+'-'+Math.random().toString(36).slice(2,7), room:selectedRoom, element:selectedEl,
+    label:currentLabel(), photos:photos.map(p=>p.b64), createdAt:Date.now() };
+  try{ await idbPut(job); }catch(e){ showError('Impossible de sauvegarder (stockage plein ?).'); return; }
+  photos=[]; renderThumbs(); refreshQueue();
+}
+async function refreshQueue(){
+  let jobs=[]; try{ jobs=await idbAll(); }catch(e){}
+  $('queueCount').textContent=jobs.length;
+  const list=$('queueList'); list.innerHTML='';
+  jobs.forEach(j=>{ const d=document.createElement('div'); d.className='qrow';
+    const s=document.createElement('span'); s.textContent=(j.label||'Élément')+' · '+j.photos.length+' photo(s)';
+    const x=document.createElement('button'); x.className='qdel'; x.textContent='×';
+    x.onclick=async()=>{ await idbDel(j.id); refreshQueue(); };
+    d.appendChild(s); d.appendChild(x); list.appendChild(d); });
+  $('queueCard').style.display=jobs.length?'block':'none';
+}
+async function processQueue(btn){
+  const jobs=await idbAll(); if(!jobs.length) return;
+  if(!navigator.onLine){ pendingQueue=true; showOffline('📴 Pas de réseau — la file sera analysée automatiquement au retour d’internet.'); return; }
+  hideError(); const old=btn.innerHTML; btn.disabled=true;
+  let i=0;
+  for(const job of jobs){
+    i++; btn.innerHTML='<span class="spinner"></span> &nbsp;Analyse '+i+'/'+jobs.length+'…';
+    try{
+      const parts=[{text:buildPrompt(job.element,job.room)}];
+      job.photos.forEach(b=>parts.push({inline_data:{mime_type:'image/jpeg',data:b}}));
+      const text=await callGemini([{parts}]);
+      const a=getReport(); a.push({t:job.label, b:text}); saveReport(a);
+      await idbDel(job.id);
+    }catch(err){ showError('Erreur sur « '+job.label+' » : '+err.message+' — elle reste dans la file.'); break; }
+  }
+  btn.innerHTML=old; btn.disabled=false; refreshQueue(); loadQuota();
+}
+
 function showError(m){ const e=$('error'); e.textContent=m; e.classList.add('show'); }
 function hideError(){ $('error').classList.remove('show'); }
 function openSettings(force){
@@ -390,6 +455,8 @@ $('cameraInput').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
 $('fileInput').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
 $('analyze').onclick=analyze;
 $('clearAll').onclick=clearAll;
+$('queueAdd').onclick=addToQueue;
+$('queueRun').onclick=e=>processQueue(e.currentTarget);
 $('copyBtn').onclick=e=>copyText($('result').textContent,e.currentTarget);
 $('addReport').onclick=addToReport;
 $('rfShort').onclick=e=>reformulate('court',e.currentTarget);
@@ -402,7 +469,7 @@ $('forceUpdate').onclick=e=>{ e.preventDefault(); location.replace(location.path
 
 window.addEventListener('online',updateOnline);
 window.addEventListener('offline',updateOnline);
-renderRooms(); renderChips(); renderReport(); checkBanner(); loadQuota(); updateOnline();
+renderRooms(); renderChips(); renderReport(); refreshQueue(); checkBanner(); loadQuota(); updateOnline();
 const last=localStorage.getItem(LS.last);
 if(last){ $('result').textContent=last; $('resultCard').style.display='block'; refreshClear(); }
 </script>
