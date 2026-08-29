@@ -210,11 +210,25 @@
   </div>
 </div>
 
+<div class="cam" id="cam">
+  <video id="camVideo" autoplay playsinline muted></video>
+  <div class="flash" id="camFlash"></div>
+  <div class="camtop">
+    <button id="camClose">✕ Fermer</button>
+    <span class="cambadge" id="camCount">0 photo</span>
+  </div>
+  <div class="cambar">
+    <button class="flip" id="camFlip">🔄 Objectif</button>
+    <button class="shutter" id="camShot" aria-label="Prendre la photo"></button>
+    <button class="done" id="camDone">✓ Terminé</button>
+  </div>
+</div>
+
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '2.1';
+const APP_VERSION = '2.2';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -545,18 +559,5 @@ renderRooms(); renderChips(); renderReport(); refreshQueue(); checkBanner(); loa
 const last=localStorage.getItem(LS.last);
 if(last){ $('result').textContent=last; $('resultCard').style.display='block'; refreshClear(); }
 </script>
-<div class="cam" id="cam">
-  <video id="camVideo" autoplay playsinline muted></video>
-  <div class="flash" id="camFlash"></div>
-  <div class="camtop">
-    <button id="camClose">✕ Fermer</button>
-    <span class="cambadge" id="camCount">0 photo</span>
-  </div>
-  <div class="cambar">
-    <button class="flip" id="camFlip">🔄 Objectif</button>
-    <button class="shutter" id="camShot" aria-label="Prendre la photo"></button>
-    <button class="done" id="camDone">✓ Terminé</button>
-  </div>
-</div>
 </body>
 </html>
