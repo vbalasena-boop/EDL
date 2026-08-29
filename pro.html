@@ -184,6 +184,13 @@
         <option value="gemini-2.5-flash">Meilleure qualité (plus lent)</option>
       </select>
     </div>
+    <div class="field">
+      <label>Rafale caméra</label>
+      <select id="burst">
+        <option value="0">Non — une photo à la fois</option>
+        <option value="1">Oui — rouvrir la caméra après chaque photo</option>
+      </select>
+    </div>
     <button class="btn" id="saveSettings">Enregistrer</button>
     <button class="btn sec" id="closeSettings" style="margin-top:10px">Fermer</button>
     <p class="footnote" style="margin-top:16px">Version <span id="ver"></span> · <a href="#" id="forceUpdate">↻ Forcer la mise à jour</a></p>
@@ -193,8 +200,8 @@
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
-const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model' };
-const APP_VERSION = '1.7';
+const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst' };
+const APP_VERSION = '1.8';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -438,6 +445,7 @@ function hideError(){ $('error').classList.remove('show'); }
 function openSettings(force){
   $('license').value=localStorage.getItem(LS.license)||'';
   $('model').value=currentModel();
+  $('burst').value=localStorage.getItem(LS.burst)==='1'?'1':'0';
   $('overlay').classList.add('show');
   if(force) showError('Colle d’abord ta clé d’accès dans ⚙️.');
 }
@@ -445,6 +453,7 @@ function closeSettings(){ $('overlay').classList.remove('show'); }
 function saveSettings(){
   localStorage.setItem(LS.license,$('license').value.trim());
   localStorage.setItem(LS.model,$('model').value);
+  localStorage.setItem(LS.burst,$('burst').value);
   closeSettings(); hideError(); checkBanner(); loadQuota();
 }
 function checkBanner(){
@@ -460,7 +469,14 @@ $('saveSettings').onclick=saveSettings;
 $('overlay').onclick=e=>{ if(e.target===$('overlay'))closeSettings(); };
 $('takePhoto').onclick=()=>$('cameraInput').click();
 $('addPhotos').onclick=()=>$('fileInput').click();
-$('cameraInput').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
+$('cameraInput').onchange=async e=>{
+  const had = e.target.files && e.target.files.length;
+  await addFiles(e.target.files);
+  e.target.value='';
+  if(had && localStorage.getItem(LS.burst)==='1'){
+    setTimeout(()=>{ try{ $('cameraInput').click(); }catch(_){} }, 300);
+  }
+};
 $('fileInput').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
 $('analyze').onclick=analyze;
 $('clearAll').onclick=clearAll;
