@@ -318,7 +318,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '4.8';
+const APP_VERSION = '4.9';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -378,11 +378,14 @@ function buildPrompt(elId, roomId){
   const intro = full
     ? `Tu es un expert en états des lieux immobiliers. Les photos montrent une pièce${roomTxt}, éventuellement sous plusieurs angles. Décris TOUS les éléments visibles (murs, sol, plafond, plinthes, portes, fenêtres, menuiseries, équipements, meubles fixes…), sans en omettre. `
     : `Tu es un expert en états des lieux immobiliers. Les photos montrent ${cible}${roomTxt}, éventuellement sous plusieurs angles. Décris UNIQUEMENT ${cible}, rien d'autre. `;
+  const format = full
+    ? `Une ligne courte par élément : « Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon », suivi — seulement s'il y a un défaut — d'un tiret puis d'une description concise. `
+    : `Réponds de façon consolidée en commençant DIRECTEMENT par la matière ou le revêtement s'il est pertinent, puis l'état, SANS répéter le nom de l'élément « ${el.label} » — par exemple « Peinture — État : Bon » (et non « Murs (peinture) — … »). S'il n'y a pas de matière pertinente (prise, interrupteur, radiateur, écran, appareil…), commence directement par « État : … ». Regroupe en UNE seule entrée un élément à surface unique (murs, sol, plafond, plinthes) ; pour un ensemble de plusieurs objets réels distincts (ex. WC et lavabo), une ligne par objet nommé par son vrai nom. Ajoute — seulement s'il y a un défaut — un tiret puis une description concise et localisée. `;
   return (
 intro +
 `Produis un descriptif consolidé : ne décris pas deux fois le même élément vu sur plusieurs photos. `+
-`N'invente PAS de sous-noms de position pour un même élément (pas de « mur principal », « mur secondaire », « mur du fond », « mur gauche », « mur droite », « mur latéral », « mur d'accès »…). Nomme l'élément simplement (par exemple « Murs ») et donne UNE SEULE entrée consolidée pour cet élément, même s'il y a plusieurs faces ou plusieurs photos. `+
-`Une ligne courte par élément : « Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon », suivi — seulement s'il y a un défaut — d'un tiret puis d'une description concise. `+
+`N'invente PAS de sous-noms de position pour un même élément (pas de « mur principal », « mur secondaire », « mur du fond », « mur gauche », « mur droite », « mur latéral », « mur d'accès »…). `+
+format +
 `Décris avec l'œil d'un professionnel ce qui justifie l'état : usure, rayures, taches, saleté, poussière, traces, fissures, éclats, moisissures… en le situant. Si l'élément est propre et sans défaut, n'écris RIEN après l'état (ni « Néant », ni « RAS », ni « Observation »). `+
 `N'ajoute JAMAIS d'indication de fonctionnement, ni de champ « Propreté », ni de champ « Observation » : la propreté se dit directement dans la description. `+
 `N'indique pas la matière pour les appareils électriques et électroniques. Juge avec neutralité, sans indulgence ni sévérité systématique. N'utilise aucun émoji ni symbole décoratif. N'invente rien, pas d'introduction ni de conclusion. En français.`
