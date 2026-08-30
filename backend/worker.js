@@ -14,6 +14,8 @@
  *                                       Laisse vide/"*" seulement en test.
  *
  * Sécurité incluse :
+ *   #1 Verrou multi-appareils : une clé n'accepte que "maxDevices" appareils (défaut 2 ;
+ *      plan "admin" = illimité). Pour réinitialiser : remets "devices":[] dans l'entrée KV.
  *   #2 Limite de débit : 20 analyses / minute par clé (protège la facture IA).
  *   #3 Verrou d'origine : si ALLOW_ORIGIN ≠ "*", la clé ne marche que depuis ton app.
  *
@@ -30,7 +32,7 @@ export default {
     const cors = {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-License',
+      'Access-Control-Allow-Headers': 'Content-Type, X-License, X-Device',
     };
 
     // Préflight CORS
@@ -58,6 +60,28 @@ export default {
     if (!rec) return json({ error: 'Clé d’accès invalide.' }, 403);
     if (rec.expires && new Date(rec.expires) < new Date())
       return json({ error: 'Abonnement expiré.' }, 403);
+
+    // #1 Verrou multi-appareils (anti-partage de clé)
+    // Une clé n'accepte qu'un nombre limité d'appareils distincts.
+    //   - rec.maxDevices : nombre max d'appareils (défaut 2 ; 0 = illimité)
+    //   - plan "admin"   : toujours illimité (ta clé perso)
+    // Pour réinitialiser les appareils d'un client : remets "devices":[] dans son entrée KV.
+    const DEFAULT_MAX_DEVICES = 2;
+    const maxDevices = (rec.plan === 'admin') ? 0
+      : (typeof rec.maxDevices === 'number' ? rec.maxDevices : DEFAULT_MAX_DEVICES);
+    if (maxDevices > 0) {
+      const device = (request.headers.get('X-Device') || '').trim().slice(0, 64);
+      if (device) {
+        let devices = Array.isArray(rec.devices) ? rec.devices : [];
+        if (!devices.includes(device)) {
+          if (devices.length >= maxDevices)
+            return json({ error: `Clé déjà utilisée sur ${maxDevices} appareils. Contacte le support pour la réinitialiser.` }, 403);
+          devices.push(device);
+          rec.devices = devices;
+          try { await env.LICENSES.put(license, JSON.stringify(rec)); } catch (e) {}
+        }
+      }
+    }
 
     const used = rec.used || 0;
     const limit = rec.limit || 0;

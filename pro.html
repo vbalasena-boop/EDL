@@ -317,8 +317,13 @@
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
-const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '5.0';
+const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface', device:'edlpro_device' };
+function deviceId(){
+  let d=localStorage.getItem(LS.device);
+  if(!d){ d = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)); localStorage.setItem(LS.device,d); }
+  return d;
+}
+const APP_VERSION = '5.1';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -398,6 +403,7 @@ intro +
 `N'invente PAS de sous-noms de position pour un même élément (pas de « mur principal », « mur secondaire », « mur du fond », « mur gauche », « mur droite », « mur latéral », « mur d'accès »…). `+
 format +
 `Décris avec l'œil d'un professionnel ce qui justifie l'état : usure, rayures, taches, saleté, poussière, traces, fissures, éclats, moisissures… en le situant. Si l'élément est propre et sans défaut, n'écris RIEN après l'état (ni « Néant », ni « RAS », ni « Observation »). `+
+`Applique ces critères de notation, toujours de la même façon : « Très bon » = comme neuf, aucune trace ; « Bon » = propre et bien entretenu, traces minimes ; « État d'usage » = usure normale d'usage (micro-rayures, légère patine, petites marques) sans dégradation ; « Mauvais » = dégradation avérée (trous, grosses taches, fissures, éclats, casse, moisissures, élément manquant ou visiblement hors service). En cas de doute entre deux niveaux, choisis le plus prudent et précise le défaut. `+
 `N'ajoute JAMAIS d'indication de fonctionnement, ni de champ « Propreté », ni de champ « Observation » : la propreté se dit directement dans la description. `+
 `N'indique pas la matière pour les appareils électriques et électroniques. Juge avec neutralité, sans indulgence ni sévérité systématique. N'utilise aucun émoji ni symbole décoratif. N'invente rien, pas d'introduction ni de conclusion. En français.`
   );
@@ -446,7 +452,7 @@ function currentModel(){ return localStorage.getItem(LS.model) || 'gemini-flash-
 async function callGemini(contents, modelOverride){
   const backend=backendURL(); const license=(localStorage.getItem(LS.license)||'').trim();
   if(!backend || !license){ openSettings(true); throw new Error('Clé d’accès manquante.'); }
-  const res=await fetch(backend,{ method:'POST', headers:{'Content-Type':'application/json','X-License':license},
+  const res=await fetch(backend,{ method:'POST', headers:{'Content-Type':'application/json','X-License':license,'X-Device':deviceId()},
     body:JSON.stringify({ model:(modelOverride||currentModel()), contents, generationConfig:{temperature:0.2,maxOutputTokens:2048} }) });
   const data=await res.json();
   if(!res.ok) throw new Error(data.error || ('Erreur '+res.status));
@@ -507,7 +513,7 @@ async function loadQuota(){
   const backend=backendURL(); const license=(localStorage.getItem(LS.license)||'').trim();
   if(!backend || !license){ $('quota').textContent=''; return; }
   try{
-    const res=await fetch(backend+'/me',{ headers:{'X-License':license} });
+    const res=await fetch(backend+'/me',{ headers:{'X-License':license,'X-Device':deviceId()} });
     const d=await res.json();
     if(res.ok && d.valid){
       $('quota').textContent = (d.plan==='admin' || d.remaining>1000000) ? '∞' : String(d.remaining);

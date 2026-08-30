@@ -56,7 +56,19 @@ Quand un client paie son mois suivant :
 - Soit tu laisses **`expires`** passer (la clé se bloque toute seule à la date).
 - Soit tu **supprimes l'entrée** (Delete) → accès coupé immédiatement.
 
+## Verrou multi-appareils (anti-partage)
+Chaque clé n'accepte que **2 appareils** par défaut. Un 3ᵉ appareil est refusé
+(« Clé déjà utilisée sur 2 appareils… »).
+
+- **Changer la limite** : ajoute `"maxDevices"` dans le JSON du client
+  (ex. `"maxDevices":1` pour un seul appareil, `"maxDevices":3` pour trois, `0` = illimité).
+  ```json
+  {"plan":"solo","limit":400,"used":0,"expires":"2026-09-29","maxDevices":2}
+  ```
+- **Réinitialiser les appareils** (client qui change de téléphone) : ouvre son entrée KV
+  et remets **`"devices":[]`** (ou supprime la ligne `devices`), puis Save.
+- Ta **clé admin** (`"plan":"admin"`) n'est jamais limitée en appareils.
+
 ## Bon à savoir
 - La clé peut être n'importe quelle chaîne ; le préfixe `IMS-` est juste pour t'y retrouver.
-- Une même clé marche sur plusieurs appareils du client (quota partagé). Le blocage
-  multi-appareils (anti-partage) pourra être ajouté plus tard.
+- Le champ `devices` se remplit tout seul (les identifiants des appareils utilisés) — tu n'as pas à le créer.
