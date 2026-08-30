@@ -323,7 +323,7 @@ function deviceId(){
   if(!d){ d = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)); localStorage.setItem(LS.device,d); }
   return d;
 }
-const APP_VERSION = '5.1';
+const APP_VERSION = '5.2';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -427,9 +427,14 @@ function fileToJpegBase64(file,maxSize){
     img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Image illisible'));}; img.src=url; });
 }
 async function addFiles(list){
-  for(const f of Array.from(list)){ if(!f.type.startsWith('image/'))continue;
-    try{const b64=await fileToJpegBase64(f,1024);photos.push({b64,url:'data:image/jpeg;base64,'+b64});}catch(e){} }
-  renderThumbs();
+  const files=Array.from(list).filter(f=>f.type&&f.type.startsWith('image/'));
+  const total=files.length; let i=0;
+  for(const f of files){
+    i++;
+    try{const b64=await fileToJpegBase64(f,1024);photos.push({b64,url:'data:image/jpeg;base64,'+b64});}catch(e){}
+    renderThumbs();                              // vignettes une à une
+    if(i<total) $('count').textContent='📦 Préparation… '+i+'/'+total;
+  }
 }
 function renderThumbs(){
   const t=$('thumbs'); t.innerHTML='';
