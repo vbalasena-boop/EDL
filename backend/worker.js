@@ -62,14 +62,18 @@ async function handleCheckout(url, env, json) {
   // Récupère la session Stripe et vérifie le paiement
   let sess;
   try {
-    const r = await fetch('https://api.stripe.com/v1/checkout/sessions/' + encodeURIComponent(sid),
+    const r = await fetch('https://api.stripe.com/v1/checkout/sessions/' + encodeURIComponent(sid) + '?expand[]=line_items',
       { headers: { Authorization: 'Bearer ' + env.STRIPE_KEY } });
     sess = await r.json();
     if (!r.ok) return json({ error: 'Session introuvable.' }, 404);
   } catch (e) { return json({ error: 'Service de paiement injoignable.' }, 502); }
   const paid = sess.payment_status === 'paid' || sess.status === 'complete';
   if (!paid) return json({ pending: true });
-  const plan = planFromAmount(sess.amount_total || 0);
+  // Montant robuste (paiement unique OU abonnement)
+  let amount = sess.amount_total || sess.amount_subtotal || 0;
+  const li = sess.line_items && sess.line_items.data && sess.line_items.data[0];
+  if (!amount && li) amount = li.amount_total || (li.price && li.price.unit_amount) || 0;
+  const plan = planFromAmount(amount);
   if (!plan) return json({ error: 'Formule non reconnue.' }, 400);
   const key = 'IMS-' + rand4() + '-' + rand4();
   try {
