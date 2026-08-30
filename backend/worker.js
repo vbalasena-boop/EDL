@@ -12,6 +12,9 @@
  *   - Variable           ALLOW_ORIGIN = l'URL de ton app (ex : https://vbalasena-boop.github.io)
  *                                       Recommandé : active le verrou d'origine (#3).
  *                                       Laisse vide/"*" seulement en test.
+ *   - Variable secrète  STRIPE_KEY    = ta clé SECRÈTE Stripe (sk_live_... ou sk_test_...)
+ *                                       Sert à créer la clé automatiquement après paiement.
+ *                                       (Endpoint GET /checkout?session_id=cs_...)
  *
  * Sécurité incluse :
  *   #1 Verrou multi-appareils : une clé n'accepte que "maxDevices" appareils (défaut 2 ;
@@ -25,6 +28,56 @@
  */
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+/* ---- Stripe : création automatique de clé après paiement ---- */
+// Associe le montant payé (en centimes) à une formule.
+// Adapte ici si tu changes tes prix.
+function planFromAmount(cents) {
+  switch (cents) {
+    case 1900: return { plan: 'solo',     limit: 400,     maxDevices: 2, months: 1 };
+    case 3900: return { plan: 'pro',      limit: 1200,    maxDevices: 2, months: 1 };
+    case 7900: return { plan: 'illimite', limit: 9999999, maxDevices: 3, months: 1 };
+    case 900:  return { plan: 'pack',     limit: 200,     maxDevices: 2, months: 3 };
+    default:   return null;
+  }
+}
+function rand4() {
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans I,O,0,1 (lisibilité)
+  let s = ''; for (let i = 0; i < 4; i++) s += A[Math.floor(Math.random() * A.length)];
+  return s;
+}
+function buildLicense(p) {
+  const d = new Date(); d.setMonth(d.getMonth() + p.months);
+  return { plan: p.plan, limit: p.limit, used: 0, maxDevices: p.maxDevices,
+           expires: d.toISOString().slice(0, 10), devices: [] };
+}
+async function handleCheckout(url, env, json) {
+  const sid = (url.searchParams.get('session_id') || '').trim();
+  if (!/^cs_[A-Za-z0-9_]+$/.test(sid)) return json({ error: 'Session invalide.' }, 400);
+  if (!env.STRIPE_KEY) return json({ error: 'Paiement non configuré.' }, 500);
+  // Déjà traité ? (idempotence) → renvoie la clé existante
+  let existing = null;
+  try { existing = await env.LICENSES.get('sess:' + sid); } catch (e) {}
+  if (existing) return json({ key: existing });
+  // Récupère la session Stripe et vérifie le paiement
+  let sess;
+  try {
+    const r = await fetch('https://api.stripe.com/v1/checkout/sessions/' + encodeURIComponent(sid),
+      { headers: { Authorization: 'Bearer ' + env.STRIPE_KEY } });
+    sess = await r.json();
+    if (!r.ok) return json({ error: 'Session introuvable.' }, 404);
+  } catch (e) { return json({ error: 'Service de paiement injoignable.' }, 502); }
+  const paid = sess.payment_status === 'paid' || sess.status === 'complete';
+  if (!paid) return json({ pending: true });
+  const plan = planFromAmount(sess.amount_total || 0);
+  if (!plan) return json({ error: 'Formule non reconnue.' }, 400);
+  const key = 'IMS-' + rand4() + '-' + rand4();
+  try {
+    await env.LICENSES.put(key, JSON.stringify(buildLicense(plan)));
+    await env.LICENSES.put('sess:' + sid, key); // mémorise pour idempotence + relecture
+  } catch (e) { return json({ error: 'Création de la clé impossible.' }, 500); }
+  return json({ key });
+}
 
 export default {
   async fetch(request, env) {
@@ -49,6 +102,12 @@ export default {
     if (origin !== '*') {
       const reqOrigin = request.headers.get('Origin') || '';
       if (reqOrigin !== origin) return json({ error: 'Origine non autorisée.' }, 403);
+    }
+
+    // Endpoint public d'achat : après paiement Stripe, crée/renvoie la clé.
+    // Appelé par la page « Merci » (merci.html) avec ?session_id=cs_...
+    if (request.method === 'GET' && url.pathname.endsWith('/checkout')) {
+      return handleCheckout(url, env, json);
     }
 
     const license = (request.headers.get('X-License') || '').trim();

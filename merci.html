@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Merci — Immoscan</title>
+<meta name="theme-color" content="#7c3aed">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<style>
+  :root{ --bg:#f6f5fb; --bg2:#eceafe; --card:#fff; --text:#17161d; --muted:#5f5e6e; --line:#e9e8f0;
+    --accent:#7c3aed; --accent2:#4f46e5; --grad:linear-gradient(135deg,#7c3aed,#4f46e5); --good:#16a34a;
+    --shadow:0 2px 10px rgba(60,40,120,.06); --shadow-lg:0 18px 44px rgba(80,50,160,.16); }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0f0e14; --bg2:#16131f; --card:#1a1922; --text:#f2f1f7; --muted:#a0a0b2; --line:#2a2836;
+      --accent:#a78bfa; --accent2:#818cf8; --grad:linear-gradient(135deg,#8b5cf6,#6366f1); --good:#34d399;
+      --shadow:0 2px 12px rgba(0,0,0,.5); --shadow-lg:0 18px 44px rgba(0,0,0,.6); } }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+    color:var(--text);font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    background:radial-gradient(800px 400px at 90% -20%,var(--bg2),transparent 60%),
+               radial-gradient(700px 380px at -10% 0%,var(--bg2),transparent 55%),var(--bg)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-lg);
+    max-width:460px;width:100%;padding:32px 26px;text-align:center}
+  .logo{width:60px;height:60px;border-radius:16px;box-shadow:var(--shadow);margin:0 auto 16px;display:block}
+  h1{font-size:24px;margin:0 0 6px;letter-spacing:-.02em}
+  p{color:var(--muted);font-size:15.5px;margin:0 0 18px;line-height:1.5}
+  .keybox{background:var(--bg2);border:1.5px dashed color-mix(in srgb,var(--accent) 45%,var(--line));
+    border-radius:14px;padding:16px;margin:18px 0;font-size:22px;font-weight:800;letter-spacing:1px;
+    color:var(--accent2);word-break:break-all}
+  .btn{display:block;width:100%;border:none;border-radius:14px;padding:15px;font-family:inherit;
+    font-size:16px;font-weight:800;cursor:pointer;color:#fff;background:var(--grad);
+    box-shadow:0 6px 18px rgba(124,58,237,.28);text-decoration:none;margin-top:10px}
+  .btn.sec{background:var(--card);color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:none}
+  .spin{width:40px;height:40px;border:4px solid var(--line);border-top-color:var(--accent);border-radius:50%;
+    animation:s .8s linear infinite;margin:10px auto 18px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .ok{color:var(--good);font-weight:800}
+  .err{color:#dc2626}
+  .hint{font-size:13px;color:var(--muted);margin-top:16px;line-height:1.45}
+  .badge{display:inline-block;background:var(--bg2);color:var(--accent2);font-weight:800;font-size:12px;
+    padding:5px 12px;border-radius:999px;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="card">
+  <svg class="logo" viewBox="0 0 512 512" aria-hidden="true">
+    <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#4f46e5"/></linearGradient></defs>
+    <rect width="512" height="512" rx="116" fill="url(#lg)"/>
+    <polygon points="256,138 132,270 380,270" fill="#fff"/>
+    <rect x="186" y="258" width="140" height="140" rx="16" fill="#fff"/>
+    <rect x="236" y="326" width="50" height="72" rx="12" fill="url(#lg)"/>
+    <rect x="96" y="185" width="320" height="22" rx="11" fill="#efeafe"/>
+    <rect x="96" y="191" width="320" height="10" rx="5" fill="#fff"/>
+  </svg>
+
+  <div id="loading">
+    <span class="badge">Paiement reçu</span>
+    <h1>Merci ! 🎉</h1>
+    <p>On génère ta clé d'accès Immoscan…</p>
+    <div class="spin"></div>
+  </div>
+
+  <div id="done" hidden>
+    <span class="badge">✅ Compte activé</span>
+    <h1>Ta clé d'accès</h1>
+    <p>Copie-la et colle-la dans <b>⚙️ Réglages</b> de l'application.</p>
+    <div class="keybox" id="key">—</div>
+    <button class="btn" id="copy">📋 Copier la clé</button>
+    <a class="btn sec" href="pro.html">Ouvrir Immoscan</a>
+    <p class="hint">Garde bien cette clé (note-la ou capture l'écran). Elle te sert à te connecter sur tes appareils.</p>
+  </div>
+
+  <div id="fail" hidden>
+    <h1>Un instant…</h1>
+    <p class="err" id="failmsg">La confirmation prend un peu de temps.</p>
+    <button class="btn" id="retry">Réessayer</button>
+    <a class="btn sec" href="pro.html">Ouvrir Immoscan</a>
+    <p class="hint">Si le problème persiste, contacte le support avec ton reçu de paiement.</p>
+  </div>
+</div>
+
+<script>
+  const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
+  const $ = id => document.getElementById(id);
+  const sid = new URLSearchParams(location.search).get('session_id');
+
+  function show(which){ ['loading','done','fail'].forEach(x=>$(x).hidden = (x!==which)); }
+
+  async function fetchKey(attempt){
+    if(!sid){ $('failmsg').textContent = "Lien invalide (session manquante)."; show('fail'); return; }
+    try{
+      const r = await fetch(BACKEND_URL + '/checkout?session_id=' + encodeURIComponent(sid));
+      const d = await r.json();
+      if(d.key){
+        $('key').textContent = d.key;
+        show('done');
+        return;
+      }
+      if(d.pending && attempt < 8){          // paiement pas encore confirmé → on repatiente
+        setTimeout(()=>fetchKey(attempt+1), 2000);
+        return;
+      }
+      $('failmsg').textContent = d.error || "Paiement pas encore confirmé.";
+      show('fail');
+    }catch(e){
+      if(attempt < 8){ setTimeout(()=>fetchKey(attempt+1), 2000); return; }
+      $('failmsg').textContent = "Connexion au serveur impossible.";
+      show('fail');
+    }
+  }
+
+  $('copy').onclick = async e => {
+    try{ await navigator.clipboard.writeText($('key').textContent); e.target.textContent='✅ Copié !'; setTimeout(()=>e.target.textContent='📋 Copier la clé',1500); }
+    catch(_){ alert('Copie impossible — sélectionne la clé manuellement.'); }
+  };
+  $('retry').onclick = ()=>{ show('loading'); fetchKey(0); };
+
+  fetchKey(0);
+</script>
+</body>
+</html>
