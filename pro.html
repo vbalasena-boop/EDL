@@ -192,6 +192,7 @@
 
   <div id="banner" class="msg info"></div>
   <div id="offline" class="msg info"></div>
+  <div class="quota" id="quota"></div>
 
   <div class="card">
     <p class="label"><span class="num">1</span> Pièce</p>
@@ -205,7 +206,6 @@
 
   <button class="btn" id="analyze" disabled>✨ &nbsp;Analyser</button>
   <button class="btn sec" id="queueAdd" style="margin-top:10px;display:none">🕓 &nbsp;Mettre en file (analyser plus tard)</button>
-  <div class="quota" id="quota"></div>
   <button class="linkbtn" id="clearAll" style="display:none">🗑 Tout effacer (photos et résultat)</button>
 
   <div class="card" id="queueCard" style="display:none">
@@ -239,9 +239,8 @@
     <div class="hint">📸 Utilise <b>📷 Photo</b> (barre du bas) pour la caméra intégrée : enchaîne les clichés sans confirmer, « ✓ Terminé » pour finir.</div>
     <div id="thumbs"></div>
     <div class="count" id="count"></div>
+    <button class="galbtn" id="addPhotos">🖼️ Choisir dans la galerie</button>
   </div>
-
-  <button class="galbtn" id="addPhotos">🖼️ Choisir dans la galerie</button>
 
   <div class="card" id="reportCard" style="display:none">
     <p class="label">📋 Rapport (<span id="reportCount">0</span>)</p>
@@ -303,7 +302,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '4.1';
+const APP_VERSION = '4.2';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
