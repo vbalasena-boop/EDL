@@ -151,6 +151,13 @@
     box-shadow:0 6px 16px rgba(124,58,237,.30);font-size:12.5px}
   .dockbtn.primary:disabled{box-shadow:none}
   .dockbtn.danger{color:var(--bad)}
+  /* Bouton monter en haut */
+  .totop{position:fixed;right:16px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:9;
+    width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--card);
+    color:var(--accent);font-size:22px;font-weight:800;box-shadow:var(--shadow-lg);cursor:pointer;
+    display:none;align-items:center;justify-content:center;transition:.12s}
+  .totop.show{display:flex}
+  .totop:active{transform:scale(.92)}
   /* Caméra intégrée */
   .cam{position:fixed;inset:0;z-index:200;background:#000;display:none;flex-direction:column}
   .cam.show{display:flex}
@@ -282,6 +289,8 @@
   </div>
 </div>
 
+<button class="totop" id="toTop" aria-label="Monter en haut">↑</button>
+
 <div class="dock" id="dock">
   <div class="dockin">
     <button class="dockbtn" id="dockCam"><span class="ic">📷</span>Photo</button>
@@ -309,7 +318,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '4.4';
+const APP_VERSION = '4.5';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -672,6 +681,8 @@ $('clearReport').onclick=clearReport;
 $('ver').textContent=APP_VERSION;
 $('forceUpdate').onclick=e=>{ e.preventDefault(); location.replace(location.pathname+'?u='+Date.now()); };
 
+$('toTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+window.addEventListener('scroll',()=>{ $('toTop').classList.toggle('show', window.scrollY>280); }, {passive:true});
 window.addEventListener('online',updateOnline);
 window.addEventListener('offline',updateOnline);
 renderRooms(); renderChips(); renderReport(); refreshQueue(); checkBanner(); loadQuota(); updateOnline();
