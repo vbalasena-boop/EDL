@@ -43,7 +43,7 @@
       radial-gradient(900px 500px at -10% 0%, var(--bg2), transparent 55%),
       var(--bg);
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
-  .wrap{max-width:680px;margin:0 auto;padding:8px 16px 48px}
+  .wrap{max-width:680px;margin:0 auto;padding:8px 16px 100px}
   /* En-tête / marque */
   header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 2px 12px}
   .brand{display:flex;align-items:center;gap:12px;min-width:0}
@@ -129,6 +129,22 @@
     header{margin:4px 2px 8px}
     .tag{display:none}
   }
+  /* Barre d'actions flottante */
+  #analyze{display:none}
+  .dock{position:fixed;left:0;right:0;bottom:0;z-index:8;
+    background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);
+    border-top:1px solid var(--line)}
+  .dockin{max-width:680px;margin:0 auto;display:flex;gap:9px;align-items:stretch;
+    padding:9px 14px calc(9px + env(safe-area-inset-bottom))}
+  .dockbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:14px;
+    padding:9px 6px;font-size:12px;font-weight:800;cursor:pointer;transition:.12s;line-height:1}
+  .dockbtn .ic{font-size:20px;line-height:1}
+  .dockbtn:active{transform:scale(.96)}
+  .dockbtn:disabled{opacity:.38;cursor:not-allowed}
+  .dockbtn.primary{flex:1.7;color:#fff;background:var(--grad);border-color:transparent;
+    box-shadow:0 6px 16px rgba(124,58,237,.30);font-size:13px}
+  .dockbtn.primary:disabled{box-shadow:none}
   /* Caméra intégrée */
   .cam{position:fixed;inset:0;z-index:200;background:#000;display:none;flex-direction:column}
   .cam.show{display:flex}
@@ -259,6 +275,14 @@
   </div>
 </div>
 
+<div class="dock" id="dock">
+  <div class="dockin">
+    <button class="dockbtn" id="dockCam"><span class="ic">📷</span>Photo</button>
+    <button class="dockbtn primary" id="dockAnalyze" disabled><span class="ic">✨</span>Analyser</button>
+    <button class="dockbtn" id="dockCopy" disabled><span class="ic">📋</span>Copier</button>
+  </div>
+</div>
+
 <div class="cam" id="cam">
   <video id="camVideo" autoplay playsinline muted></video>
   <div class="flash" id="camFlash"></div>
@@ -277,7 +301,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '3.5';
+const APP_VERSION = '3.6';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -377,6 +401,7 @@ function renderThumbs(){
     d.appendChild(im); d.appendChild(x); t.appendChild(d); });
   $('count').textContent = photos.length ? photos.length+' photo(s) ajoutée(s)' : '';
   $('analyze').disabled = photos.length===0;
+  $('dockAnalyze').disabled = photos.length===0;
   $('queueAdd').style.display = photos.length ? 'block' : 'none';
   refreshClear();
 }
@@ -406,7 +431,7 @@ async function runRequest(contents, btn, busyLabel, modelOverride){
     const text=await callGemini(contents, modelOverride);
     showResult(text); localStorage.setItem(LS.last,text); loadQuota();
   }catch(err){ showError('Échec : '+err.message); }
-  finally{ btn.innerHTML=old; btn.disabled=false; $('analyze').disabled=photos.length===0; }
+  finally{ btn.innerHTML=old; btn.disabled=false; $('analyze').disabled=photos.length===0; $('dockAnalyze').disabled=photos.length===0; }
 }
 
 let pendingAnalyze=false;
@@ -421,7 +446,7 @@ function analyze(){
   photos.forEach(p=>parts.push({inline_data:{mime_type:'image/jpeg',data:p.b64}}));
   const el=ELEMENTS.find(e=>e.id===selectedEl);
   const modelOverride = (el && el.meter) ? 'gemini-2.5-flash' : null; // relevé de compteur : précision max
-  runRequest([{parts}], $('analyze'), 'Analyse en cours…', modelOverride);
+  runRequest([{parts}], $('dockAnalyze'), 'Analyse…', modelOverride);
 }
 function showOffline(m){ const o=$('offline'); o.textContent=m; o.classList.add('show'); }
 function hideOffline(){ $('offline').classList.remove('show'); }
@@ -459,6 +484,7 @@ async function loadQuota(){
 }
 function showResult(text){
   $('result').textContent=cleanText(text); $('resultCard').style.display='block'; refreshClear();
+  $('dockCopy').disabled=false;
   $('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function copyText(txt,btn){
@@ -477,7 +503,7 @@ function cleanText(s){ return (s||'').replace(EMOJI_RE,'').replace(/[ \t]+/g,' '
 function reportToText(a){ return a.map(e=>cleanText(e.t).toUpperCase()+'\n'+cleanText(e.b)).join('\n\n'); }
 function renderReport(){ const a=getReport(); $('reportCount').textContent=a.length; $('reportText').textContent=reportToText(a); $('reportCard').style.display=a.length?'block':'none'; }
 function clearReport(){ if(getReport().length && !confirm('Vider tout le rapport ?'))return; saveReport([]); }
-function clearAll(){ photos=[]; renderThumbs(); $('result').textContent=''; $('resultCard').style.display='none'; localStorage.removeItem(LS.last); hideError(); refreshClear(); }
+function clearAll(){ photos=[]; renderThumbs(); $('result').textContent=''; $('resultCard').style.display='none'; $('dockCopy').disabled=true; localStorage.removeItem(LS.last); hideError(); refreshClear(); }
 /* ---- File d'attente hors ligne (IndexedDB) ---- */
 const IDB_DB='edlpro_db', IDB_STORE='jobs';
 function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open(IDB_DB,1);
@@ -619,6 +645,9 @@ $('addPhotos').onclick=()=>$('fileInput').click();
 $('cameraInput').onchange=async e=>{ await addFiles(e.target.files); e.target.value=''; };
 $('fileInput').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
 $('analyze').onclick=analyze;
+$('dockCam').onclick=openCamera;
+$('dockAnalyze').onclick=analyze;
+$('dockCopy').onclick=e=>copyText($('result').textContent,e.currentTarget);
 $('clearAll').onclick=clearAll;
 $('queueAdd').onclick=addToQueue;
 $('queueRun').onclick=e=>processQueue(e.currentTarget);
@@ -636,7 +665,7 @@ window.addEventListener('online',updateOnline);
 window.addEventListener('offline',updateOnline);
 renderRooms(); renderChips(); renderReport(); refreshQueue(); checkBanner(); loadQuota(); updateOnline();
 const last=localStorage.getItem(LS.last);
-if(last){ $('result').textContent=last; $('resultCard').style.display='block'; refreshClear(); }
+if(last){ $('result').textContent=last; $('resultCard').style.display='block'; $('dockCopy').disabled=false; refreshClear(); }
 </script>
 </body>
 </html>
