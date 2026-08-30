@@ -309,7 +309,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '4.3';
+const APP_VERSION = '4.4';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -493,7 +493,10 @@ async function loadQuota(){
 function showResult(text){
   $('result').textContent=cleanText(text); $('resultCard').style.display='block'; refreshClear();
   $('dockCopy').disabled=false;
-  $('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+  requestAnimationFrame(()=>{
+    const y = $('resultCard').getBoundingClientRect().top + window.scrollY - 10;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  });
 }
 async function copyText(txt,btn){
   try{ await navigator.clipboard.writeText(txt); const old=btn.innerHTML; btn.innerHTML='✅ Copié !'; setTimeout(()=>btn.innerHTML=old,1500);}
