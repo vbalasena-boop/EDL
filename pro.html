@@ -318,7 +318,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '4.9';
+const APP_VERSION = '5.0';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -351,6 +351,14 @@ const ELEMENTS = [
   { id:'table', label:'Table & chaises', desc:'la table et les chaises' },
   { id:'vaisselle', label:'Vaisselle', desc:'la vaisselle, les ustensiles et le petit électroménager' },
   { id:'luminaire', label:'Luminaire', desc:'le ou les luminaires' },
+  { id:'daaf', label:'Détecteur de fumée', desc:'le détecteur de fumée (DAAF) : présence, fixation et état apparent' },
+  { id:'chauffeeau', label:'Chauffe-eau / Ballon', desc:"le chauffe-eau ou le ballon d'eau chaude" },
+  { id:'vmc', label:'VMC / Aération', desc:"la VMC, les bouches d'aération ou les grilles de ventilation" },
+  { id:'exterieur', label:'Balcon / Terrasse', desc:'le balcon, la terrasse ou la loggia et son garde-corps' },
+  { id:'annexe', label:'Cave / Parking', desc:'la cave, le garage, le parking ou le cellier' },
+  { id:'interphone', label:'Interphone / Sonnette', desc:"l'interphone, le visiophone ou la sonnette" },
+  { id:'boite', label:'Boîte aux lettres', desc:'la boîte aux lettres et sa serrure' },
+  { id:'cles', label:'Clés remises', desc:'les clés remises', keys:true },
   { id:'compteur', label:'Compteurs (relevé)', desc:'les compteurs', meter:true },
   { id:'piece', label:'Pièce entière', desc:'tous les éléments visibles de la pièce', full:true },
   { id:'inventaire', label:'Inventaire meublé', desc:'l’inventaire du mobilier et des équipements', inventory:true },
@@ -368,6 +376,9 @@ function buildPrompt(elId, roomId){
   const el = ELEMENTS.find(e => e.id === (elId||selectedEl)) || ELEMENTS[0];
   const room = ROOMS.find(r => r.id === (roomId||selectedRoom));
   const roomTxt = room ? ` (pièce : ${room.label})` : '';
+  if(el.keys){
+    return `Tu es un expert en états des lieux. Les photos montrent les CLÉS et moyens d'accès remis au locataire. Compte et liste chaque type distinct : clés (porte d'entrée, boîte aux lettres, cave, garage, boîte à clés…), badge(s) / Vigik, télécommande(s) de portail, bip(s). Une ligne par type, format : Type — Quantité : N. Recopie uniquement ce qui est visible, n'invente aucun objet ni quantité. N'utilise aucun émoji ni symbole décoratif. Pas d'introduction ni de conclusion. En français.`;
+  }
   if(el.meter){
     return `Tu es un expert en états des lieux. Les photos montrent un ou plusieurs COMPTEURS (électricité, gaz, eau chaude ou eau froide), éventuellement en gros plan. Pour CHAQUE compteur visible, relève ces informations quand elles sont présentes sur la photo : (1) le TYPE de compteur ; (2) son NUMÉRO de matricule / numéro de série inscrit sur le compteur ; (3) pour l'ÉLECTRICITÉ, le PRM (aussi appelé PDL, un numéro à 14 chiffres, souvent affiché à l'écran d'un Linky après appui sur « + » ou sur une étiquette) ; pour le GAZ, le PCE s'il est visible ; (4) l'INDEX affiché (les chiffres du cadran ou de l'écran). Ne confonds pas le matricule (n° du compteur) et le PRM/PDL (n° du point de livraison, 14 chiffres). Pour un compteur électrique avec plusieurs index (Heures Pleines / Heures Creuses, ou Base), donne chaque index séparément avec son libellé. Une ligne par compteur, format : Compteur [type] — N° : [matricule] — PRM : [14 chiffres] (électricité) ou PCE : [numéro] (gaz) — Index : [valeur] [unité], avec l'unité kWh pour l'électricité et m³ pour le gaz et l'eau. N'affiche PRM/PCE que pour le type concerné. Recopie chiffres et numéros EXACTEMENT tels qu'ils apparaissent, sans arrondir ni compléter. Si une information est réellement illisible ou absente de la photo, écris [?] à sa place plutôt que de deviner ; n'invente jamais un numéro. N'affiche pas une information qui n'existe pas pour ce compteur. N'utilise aucun émoji ni symbole décoratif. Pas d'introduction ni de conclusion. En français.`;
   }
