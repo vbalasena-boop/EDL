@@ -134,17 +134,18 @@
   .dock{position:fixed;left:0;right:0;bottom:0;z-index:8;
     background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);
     border-top:1px solid var(--line)}
-  .dockin{max-width:680px;margin:0 auto;display:flex;gap:9px;align-items:stretch;
-    padding:9px 14px calc(9px + env(safe-area-inset-bottom))}
+  .dockin{max-width:680px;margin:0 auto;display:flex;gap:7px;align-items:stretch;
+    padding:9px 12px calc(9px + env(safe-area-inset-bottom))}
   .dockbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:14px;
-    padding:9px 6px;font-size:12px;font-weight:800;cursor:pointer;transition:.12s;line-height:1}
-  .dockbtn .ic{font-size:20px;line-height:1}
+    padding:9px 4px;font-size:11.5px;font-weight:800;cursor:pointer;transition:.12s;line-height:1}
+  .dockbtn .ic{font-size:19px;line-height:1}
   .dockbtn:active{transform:scale(.96)}
   .dockbtn:disabled{opacity:.38;cursor:not-allowed}
-  .dockbtn.primary{flex:1.7;color:#fff;background:var(--grad);border-color:transparent;
-    box-shadow:0 6px 16px rgba(124,58,237,.30);font-size:13px}
+  .dockbtn.primary{flex:1.5;color:#fff;background:var(--grad);border-color:transparent;
+    box-shadow:0 6px 16px rgba(124,58,237,.30);font-size:12.5px}
   .dockbtn.primary:disabled{box-shadow:none}
+  .dockbtn.danger{color:var(--bad)}
   /* Caméra intégrée */
   .cam{position:fixed;inset:0;z-index:200;background:#000;display:none;flex-direction:column}
   .cam.show{display:flex}
@@ -279,6 +280,7 @@
     <button class="dockbtn" id="dockCam"><span class="ic">📷</span>Photo</button>
     <button class="dockbtn primary" id="dockAnalyze" disabled><span class="ic">✨</span>Analyser</button>
     <button class="dockbtn" id="dockCopy" disabled><span class="ic">📋</span>Copier</button>
+    <button class="dockbtn danger" id="dockClear" disabled><span class="ic">🗑</span>Effacer</button>
   </div>
 </div>
 
@@ -300,7 +302,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '3.7';
+const APP_VERSION = '3.8';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -404,7 +406,7 @@ function renderThumbs(){
   $('queueAdd').style.display = photos.length ? 'block' : 'none';
   refreshClear();
 }
-function refreshClear(){ $('clearAll').style.display=(photos.length||$('resultCard').style.display==='block')?'block':'none'; }
+function refreshClear(){ const has=(photos.length||$('resultCard').style.display==='block'); $('clearAll').style.display='none'; $('dockClear').disabled=!has; }
 
 function backendURL(){ return (BACKEND_URL || localStorage.getItem(LS.backend) || '').trim().replace(/\/$/,''); }
 
@@ -502,7 +504,8 @@ function cleanText(s){ return (s||'').replace(EMOJI_RE,'').replace(/[ \t]+/g,' '
 function reportToText(a){ return a.map(e=>cleanText(e.t).toUpperCase()+'\n'+cleanText(e.b)).join('\n\n'); }
 function renderReport(){ const a=getReport(); $('reportCount').textContent=a.length; $('reportText').textContent=reportToText(a); $('reportCard').style.display=a.length?'block':'none'; }
 function clearReport(){ if(getReport().length && !confirm('Vider tout le rapport ?'))return; saveReport([]); }
-function clearAll(){ photos=[]; renderThumbs(); $('result').textContent=''; $('resultCard').style.display='none'; $('dockCopy').disabled=true; localStorage.removeItem(LS.last); hideError(); refreshClear(); }
+function clearAll(){ if((photos.length||$('resultCard').style.display==='block') && !confirm('Effacer les photos et le résultat en cours ?')) return;
+  photos=[]; renderThumbs(); $('result').textContent=''; $('resultCard').style.display='none'; $('dockCopy').disabled=true; localStorage.removeItem(LS.last); hideError(); refreshClear(); }
 /* ---- File d'attente hors ligne (IndexedDB) ---- */
 const IDB_DB='edlpro_db', IDB_STORE='jobs';
 function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open(IDB_DB,1);
@@ -646,6 +649,7 @@ $('analyze').onclick=analyze;
 $('dockCam').onclick=openCamera;
 $('dockAnalyze').onclick=analyze;
 $('dockCopy').onclick=e=>copyText($('result').textContent,e.currentTarget);
+$('dockClear').onclick=clearAll;
 $('clearAll').onclick=clearAll;
 $('queueAdd').onclick=addToQueue;
 $('queueRun').onclick=e=>processQueue(e.currentTarget);
