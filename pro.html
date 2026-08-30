@@ -61,7 +61,9 @@
   .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;
     border-radius:7px;background:var(--grad);color:#fff;font-size:12.5px;font-weight:800;box-shadow:var(--shadow)}
   .chips{display:flex;flex-wrap:wrap;gap:6px}
-  #chips{max-height:180px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  #rooms{max-height:clamp(72px,13dvh,130px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    padding:2px 2px 4px;margin:-2px}
+  #chips{max-height:clamp(96px,22dvh,190px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     padding:2px 2px 4px;margin:-2px}
   .chip{border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;
     padding:7px 13px;font-size:14px;font-weight:700;cursor:pointer;transition:.14s}
@@ -118,6 +120,15 @@
   .footnote{text-align:center;font-size:12px;color:var(--muted);margin-top:10px}
   .footnote a{color:var(--accent);font-weight:700}
   @media (min-width:560px){ .wordmark{font-size:26px} .logo{width:50px;height:50px} }
+  /* Écrans courts : tout doit tenir sans défiler jusqu'au bouton Analyser */
+  @media (max-height:720px){
+    .hint{display:none}
+    .card{padding:12px;margin-bottom:8px}
+    .photobtn{padding:12px}
+    .galbtn{margin-top:6px;padding:6px}
+    header{margin:4px 2px 8px}
+    .tag{display:none}
+  }
   /* Caméra intégrée */
   .cam{position:fixed;inset:0;z-index:200;background:#000;display:none;flex-direction:column}
   .cam.show{display:flex}
@@ -266,7 +277,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '3.4';
+const APP_VERSION = '3.5';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
