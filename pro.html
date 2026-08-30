@@ -318,7 +318,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '4.7';
+const APP_VERSION = '4.8';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -381,6 +381,7 @@ function buildPrompt(elId, roomId){
   return (
 intro +
 `Produis un descriptif consolidé : ne décris pas deux fois le même élément vu sur plusieurs photos. `+
+`N'invente PAS de sous-noms de position pour un même élément (pas de « mur principal », « mur secondaire », « mur du fond », « mur gauche », « mur droite », « mur latéral », « mur d'accès »…). Nomme l'élément simplement (par exemple « Murs ») et donne UNE SEULE entrée consolidée pour cet élément, même s'il y a plusieurs faces ou plusieurs photos. `+
 `Une ligne courte par élément : « Élément (matière si pertinent) — État : Mauvais / État d'usage / Bon / Très bon », suivi — seulement s'il y a un défaut — d'un tiret puis d'une description concise. `+
 `Décris avec l'œil d'un professionnel ce qui justifie l'état : usure, rayures, taches, saleté, poussière, traces, fissures, éclats, moisissures… en le situant. Si l'élément est propre et sans défaut, n'écris RIEN après l'état (ni « Néant », ni « RAS », ni « Observation »). `+
 `N'ajoute JAMAIS d'indication de fonctionnement, ni de champ « Propreté », ni de champ « Observation » : la propreté se dit directement dans la description. `+
