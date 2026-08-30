@@ -204,11 +204,10 @@
 
   <div class="card">
     <p class="label"><span class="num">3</span> Photos</p>
-    <button class="photobtn" id="takePhoto">📷 &nbsp;Prendre des photos</button>
-    <button class="galbtn" id="addPhotos">🖼️ &nbsp;Choisir dans la galerie</button>
+    <button class="photobtn" id="addPhotos">🖼️ &nbsp;Choisir dans la galerie</button>
     <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
     <input type="file" id="fileInput" accept="image/*" multiple hidden>
-    <div class="hint">📸 Caméra intégrée : enchaîne les clichés (bouton central) sans confirmer, « ✓ Terminé » pour finir.</div>
+    <div class="hint">📸 Utilise <b>📷 Photo</b> (barre du bas) pour la caméra intégrée : enchaîne les clichés sans confirmer, « ✓ Terminé » pour finir. Ou importe depuis la galerie ci-dessus.</div>
     <div id="thumbs"></div>
     <div class="count" id="count"></div>
   </div>
@@ -301,7 +300,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '3.6';
+const APP_VERSION = '3.7';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -636,7 +635,6 @@ function closeCamera(){
   if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
   $('camVideo').srcObject=null; $('cam').classList.remove('show');
 }
-$('takePhoto').onclick=openCamera;
 $('camShot').onclick=camCapture;
 $('camFlip').onclick=camFlip;
 $('camDone').onclick=closeCamera;
