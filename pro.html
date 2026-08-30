@@ -203,15 +203,6 @@
     <div class="chips" id="chips"></div>
   </div>
 
-  <div class="card">
-    <p class="label"><span class="num">3</span> Photos</p>
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
-    <input type="file" id="fileInput" accept="image/*" multiple hidden>
-    <div class="hint">📸 Utilise <b>📷 Photo</b> (barre du bas) pour la caméra intégrée : enchaîne les clichés sans confirmer, « ✓ Terminé » pour finir.</div>
-    <div id="thumbs"></div>
-    <div class="count" id="count"></div>
-  </div>
-
   <button class="btn" id="analyze" disabled>✨ &nbsp;Analyser</button>
   <button class="btn sec" id="queueAdd" style="margin-top:10px;display:none">🕓 &nbsp;Mettre en file (analyser plus tard)</button>
   <div class="quota" id="quota"></div>
@@ -239,6 +230,15 @@
       <button class="btn sec small" id="copyBtn">📋 Copier</button>
       <button class="btn small" id="addReport">➕ Au rapport</button>
     </div>
+  </div>
+
+  <div class="card">
+    <p class="label"><span class="num">3</span> Photos</p>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+    <div class="hint">📸 Utilise <b>📷 Photo</b> (barre du bas) pour la caméra intégrée : enchaîne les clichés sans confirmer, « ✓ Terminé » pour finir.</div>
+    <div id="thumbs"></div>
+    <div class="count" id="count"></div>
   </div>
 
   <button class="galbtn" id="addPhotos">🖼️ Choisir dans la galerie</button>
@@ -303,7 +303,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface' };
-const APP_VERSION = '4.0';
+const APP_VERSION = '4.1';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
