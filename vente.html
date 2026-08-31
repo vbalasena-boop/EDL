@@ -261,7 +261,7 @@
         <a class="btn ghost block" href="#" data-plan="illimite">Choisir Illimité</a>
       </div>
     </div>
-    <p class="planfoot">Occasionnel ? <b>Pack 9 €</b> = 200 analyses valables 3 mois, sans abonnement · Paiement à l'année : <b>2 mois offerts</b>.</p>
+    <p class="planfoot">Occasionnel ? <a href="#" data-plan="pack"><b>Pack 9 €</b></a> = 200 analyses valables 3 mois, sans abonnement · Paiement à l'année : <b>2 mois offerts</b>.</p>
   </div>
 </section>
 
@@ -309,9 +309,10 @@
   // Liens de paiement Stripe — colle ici les URLs de tes "Payment Links" Stripe.
   // Laisse vide ("") tant que ce n'est pas prêt : le bouton affichera un message.
   const STRIPE_LINKS = {
-    solo: "",
-    pro: "",
-    illimite: ""
+    solo: "https://buy.stripe.com/4gM5kF2Wpfjc60M6TCdfG02",
+    pro: "https://buy.stripe.com/3cI5kF2Wpdb4ah2fq8dfG03",
+    illimite: "https://buy.stripe.com/fZu14pfJb9YS4WIdi0dfG01",
+    pack: "https://buy.stripe.com/fZufZj1Sl9YS4WIb9SdfG00"
   };
   document.querySelectorAll('[data-plan]').forEach(a=>{
     a.addEventListener('click', e=>{
