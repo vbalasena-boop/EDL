@@ -280,7 +280,7 @@
       <label>Qualité de l'analyse</label>
       <select id="model">
         <option value="gemini-flash-lite-latest">Rapide (recommandé)</option>
-        <option value="gemini-2.5-flash">Meilleure qualité (plus lent)</option>
+        <option value="gemini-flash-latest">Meilleure qualité (plus lent)</option>
       </select>
     </div>
     <button class="btn" id="saveSettings">Enregistrer</button>
@@ -323,7 +323,7 @@ function deviceId(){
   if(!d){ d = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)); localStorage.setItem(LS.device,d); }
   return d;
 }
-const APP_VERSION = '5.2';
+const APP_VERSION = '5.3';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -356,6 +356,7 @@ const ELEMENTS = [
   { id:'table', label:'Table & chaises', desc:'la table et les chaises' },
   { id:'vaisselle', label:'Vaisselle', desc:'la vaisselle, les ustensiles et le petit électroménager' },
   { id:'luminaire', label:'Luminaire', desc:'le ou les luminaires' },
+  { id:'miroir', label:'Miroir', desc:'le ou les miroirs' },
   { id:'daaf', label:'Détecteur de fumée', desc:'le détecteur de fumée (DAAF) : présence, fixation et état apparent' },
   { id:'chauffeeau', label:'Chauffe-eau / Ballon', desc:"le chauffe-eau ou le ballon d'eau chaude" },
   { id:'vmc', label:'VMC / Aération', desc:"la VMC, les bouches d'aération ou les grilles de ventilation" },
@@ -452,7 +453,7 @@ function refreshClear(){ const has=(photos.length||$('resultCard').style.display
 
 function backendURL(){ return (BACKEND_URL || localStorage.getItem(LS.backend) || '').trim().replace(/\/$/,''); }
 
-function currentModel(){ return localStorage.getItem(LS.model) || 'gemini-flash-lite-latest'; }
+function currentModel(){ let m=localStorage.getItem(LS.model)||'gemini-flash-lite-latest'; if(m==='gemini-2.5-flash'||m==='gemini-2.5-flash-latest') m='gemini-flash-latest'; return m; }
 
 async function callGemini(contents, modelOverride){
   const backend=backendURL(); const license=(localStorage.getItem(LS.license)||'').trim();
@@ -488,7 +489,7 @@ function analyze(){
   const parts=[{text:buildPrompt()}];
   photos.forEach(p=>parts.push({inline_data:{mime_type:'image/jpeg',data:p.b64}}));
   const el=ELEMENTS.find(e=>e.id===selectedEl);
-  const modelOverride = (el && el.meter) ? 'gemini-2.5-flash' : null; // relevé de compteur : précision max
+  const modelOverride = (el && el.meter) ? 'gemini-flash-latest' : null; // relevé de compteur : précision max
   runRequest([{parts}], $('dockAnalyze'), 'Analyse…', modelOverride);
 }
 function showOffline(m){ const o=$('offline'); o.textContent=m; o.classList.add('show'); }
@@ -589,7 +590,7 @@ async function processQueue(btn){
       const parts=[{text:buildPrompt(job.element,job.room)}];
       job.photos.forEach(b=>parts.push({inline_data:{mime_type:'image/jpeg',data:b}}));
       const jel=ELEMENTS.find(e=>e.id===job.element);
-      const text=await callGemini([{parts}], (jel && jel.meter) ? 'gemini-2.5-flash' : null);
+      const text=await callGemini([{parts}], (jel && jel.meter) ? 'gemini-flash-latest' : null);
       const a=getReport(); a.push({t:job.label, b:text}); saveReport(a);
       await idbDel(job.id);
     }catch(err){ showError('Erreur sur « '+job.label+' » : '+err.message+' — elle reste dans la file.'); break; }
@@ -640,12 +641,21 @@ async function startCamStream(){
     await new Promise(res=>{ const done=()=>res(); v.addEventListener('loadedmetadata',done,{once:true}); setTimeout(done,1800); });
   }
 }
+let camIdleTimer=null;
+function stopCam(){
+  if(camIdleTimer){ clearTimeout(camIdleTimer); camIdleTimer=null; }
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  const v=$('camVideo'); if(v) v.srcObject=null;
+}
 async function openCamera(){
+  if(camIdleTimer){ clearTimeout(camIdleTimer); camIdleTimer=null; }
+  camShots=0; updateCamCount();
+  // Réutilise le flux déjà actif : pas de nouvelle demande d'autorisation, ouverture instantanée
+  if(camStream && camStream.active){ $('cam').classList.add('show'); return; }
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     showError("Caméra intégrée non disponible sur ce navigateur. J’ouvre l’appareil photo classique.");
     $('cameraInput').click(); return;
   }
-  camShots=0; updateCamCount();
   try{
     await startCamStream();
   }catch(err){
@@ -679,13 +689,18 @@ async function camFlip(){
   try{ await startCamStream(); }catch(_){}
 }
 function closeCamera(){
-  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
-  $('camVideo').srcObject=null; $('cam').classList.remove('show');
+  $('cam').classList.remove('show');
+  // Garde la caméra prête ~45 s pour enchaîner sans re-demander l'autorisation (iOS)
+  if(camIdleTimer) clearTimeout(camIdleTimer);
+  camIdleTimer=setTimeout(stopCam, 45000);
 }
 $('camShot').onclick=camCapture;
 $('camFlip').onclick=camFlip;
 $('camDone').onclick=closeCamera;
 $('camClose').onclick=closeCamera;
+// Libère la caméra quand on quitte/masque l'app (ex. bascule vers Nockee)
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stopCam(); });
+window.addEventListener('pagehide', stopCam);
 $('addPhotos').onclick=()=>$('fileInput').click();
 $('cameraInput').onchange=async e=>{ await addFiles(e.target.files); e.target.value=''; };
 $('fileInput').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
