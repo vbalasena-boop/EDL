@@ -15,6 +15,9 @@
  *   - Variable secrète  STRIPE_KEY    = ta clé SECRÈTE Stripe (sk_live_... ou sk_test_...)
  *                                       Sert à créer la clé automatiquement après paiement.
  *                                       (Endpoint GET /checkout?session_id=cs_...)
+ *   - Variable secrète  STRIPE_WEBHOOK_SECRET = le "signing secret" (whsec_...) du webhook Stripe.
+ *                                       Sert au renouvellement mensuel auto des abonnements.
+ *                                       (Endpoint POST /webhook ; événement invoice.paid)
  *
  * Sécurité incluse :
  *   #1 Verrou multi-appareils : une clé n'accepte que "maxDevices" appareils (défaut 2 ;
@@ -79,8 +82,52 @@ async function handleCheckout(url, env, json) {
   try {
     await env.LICENSES.put(key, JSON.stringify(buildLicense(plan)));
     await env.LICENSES.put('sess:' + sid, key); // mémorise pour idempotence + relecture
+    // Abonnement : lie l'ID d'abonnement à la clé (pour le renouvellement auto via webhook)
+    if (sess.subscription) await env.LICENSES.put('sub:' + sess.subscription, key);
   } catch (e) { return json({ error: 'Création de la clé impossible.' }, 500); }
   return json({ key });
+}
+
+/* ---- Webhook Stripe : renouvellement mensuel automatique des abonnements ---- */
+async function verifyStripe(payload, sigHeader, secret) {
+  try {
+    const parts = {};
+    (sigHeader || '').split(',').forEach(kv => { const i = kv.indexOf('='); if (i > 0) parts[kv.slice(0, i)] = kv.slice(i + 1); });
+    if (!parts.t || !parts.v1) return false;
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const sig = await crypto.subtle.sign('HMAC', key, enc.encode(parts.t + '.' + payload));
+    const hex = [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
+    if (hex.length !== (parts.v1 || '').length) return false;
+    let diff = 0; for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ parts.v1.charCodeAt(i);
+    return diff === 0;
+  } catch (e) { return false; }
+}
+async function handleWebhook(request, env) {
+  if (!env.STRIPE_WEBHOOK_SECRET) return new Response('webhook non configuré', { status: 500 });
+  const payload = await request.text();
+  const ok = await verifyStripe(payload, request.headers.get('Stripe-Signature'), env.STRIPE_WEBHOOK_SECRET);
+  if (!ok) return new Response('signature invalide', { status: 400 });
+  let evt; try { evt = JSON.parse(payload); } catch (e) { return new Response('json invalide', { status: 400 }); }
+  if (evt.type === 'invoice.paid' || evt.type === 'invoice.payment_succeeded') {
+    const inv = evt.data && evt.data.object;
+    // Uniquement les RENOUVELLEMENTS (le 1er paiement est géré par /checkout)
+    if (inv && inv.billing_reason === 'subscription_cycle' && inv.subscription) {
+      try {
+        const key = await env.LICENSES.get('sub:' + inv.subscription);
+        if (key) {
+          const rec = await env.LICENSES.get(key, 'json');
+          if (rec) {
+            const d = new Date(); d.setMonth(d.getMonth() + 1);
+            rec.expires = d.toISOString().slice(0, 10); // prolonge d'un mois
+            rec.used = 0;                                // quota remis à zéro
+            await env.LICENSES.put(key, JSON.stringify(rec));
+          }
+        }
+      } catch (e) {}
+    }
+  }
+  return new Response('ok', { status: 200 });
 }
 
 export default {
@@ -98,6 +145,11 @@ export default {
     const url = new URL(request.url);
     const json = (obj, status = 200) =>
       new Response(JSON.stringify(obj), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
+
+    // Webhook Stripe (serveur à serveur) : AVANT le verrou d'origine (pas d'en-tête Origin).
+    if (request.method === 'POST' && url.pathname.endsWith('/webhook')) {
+      return handleWebhook(request, env);
+    }
 
     // #3 Verrou d'origine : si ALLOW_ORIGIN est défini (≠ "*"), la clé ne
     // fonctionne que depuis ton app. Un Origin absent (appel non-navigateur) ou

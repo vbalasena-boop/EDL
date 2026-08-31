@@ -61,11 +61,28 @@ const STRIPE_LINKS = {
 
 ---
 
-## ⚠️ Important : abonnements mensuels
-La création auto gère le **1er paiement**. Pour un **abonnement mensuel**, la clé est
-créée avec **1 mois de validité**. Le **renouvellement automatique** (prolonger la clé
-chaque mois quand Stripe re-prélève) nécessite un **webhook** `invoice.paid` — c'est
-l'étape suivante à ajouter.
+## Abonnements mensuels — renouvellement automatique (webhook)
+- **1er paiement** → clé créée par `/checkout` (page Merci), valable 1 mois.
+- **Renouvellements** (mois suivants) → gérés par le **webhook** : la clé se **prolonge d'un
+  mois** et son **quota repart à zéro** automatiquement.
 
-👉 Pour démarrer **sans ce risque**, vends d'abord en **paiement unique** (ex. « Pack »
-ou « 1 mois »), le temps d'ajouter le webhook de renouvellement.
+### Configurer le webhook (une fois)
+1. Stripe → **Développeurs → Webhooks → Ajouter un point de terminaison**.
+2. **URL du point de terminaison** :
+   ```
+   https://edl-ia-api.monkey-pro-instant-events.workers.dev/webhook
+   ```
+3. **Événements à écouter** : coche **`invoice.paid`** (tu peux aussi ajouter
+   `invoice.payment_succeeded`).
+4. Crée → ouvre le point de terminaison → **« Signing secret »** → **Révéler** → copie
+   la valeur **`whsec_...`**.
+5. Cloudflare → `edl-ia-api` → Settings → Variables → **Add** :
+   - Type **Secret** — Name **`STRIPE_WEBHOOK_SECRET`** — Value : le `whsec_...`.
+   - **Deploy**.
+
+> ⚠️ Le webhook doit être créé dans le **même mode** (test/réel) que tes Payment Links,
+> et son secret `whsec_...` correspond à ce mode.
+
+### Résiliation
+Quand un client résilie, Stripe arrête les prélèvements → plus de `invoice.paid` → la clé
+n'est plus prolongée et **expire à la fin du mois payé**. Rien à faire de ton côté.
