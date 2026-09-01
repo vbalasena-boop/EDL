@@ -1,7 +1,7 @@
 {
   "name": "Immoscan",
   "short_name": "Immoscan",
-  "description": "États des lieux assistés par IA — descriptifs prêts à coller dans Nockee.",
+  "description": "États des lieux assistés par IA — descriptifs prêts à coller dans votre logiciel.",
   "start_url": "./pro.html",
   "scope": "./",
   "display": "standalone",

@@ -698,7 +698,7 @@ $('camShot').onclick=camCapture;
 $('camFlip').onclick=camFlip;
 $('camDone').onclick=closeCamera;
 $('camClose').onclick=closeCamera;
-// Libère la caméra quand on quitte/masque l'app (ex. bascule vers Nockee)
+// Libère la caméra quand on quitte/masque l'app (ex. bascule vers un autre logiciel)
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stopCam(); });
 window.addEventListener('pagehide', stopCam);
 $('addPhotos').onclick=()=>$('fileInput').click();
