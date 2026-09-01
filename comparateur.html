@@ -93,6 +93,27 @@
   .sheet h2{margin:0 0 4px;font-size:20px;font-weight:800}
   .sheet p{margin:0 0 18px;font-size:13.5px;color:var(--muted)}
   .sheet .field{margin-bottom:16px}
+  /* Estimation vétusté */
+  .vetintro{font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 12px}
+  .vetrow{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:var(--bg)}
+  .vettop{display:flex;gap:8px;align-items:center;margin-bottom:9px}
+  .vettop select{flex:1;padding:11px;border:1.5px solid var(--line);border-radius:11px;font-size:15px;background:var(--card);color:var(--text);-webkit-appearance:none}
+  .vettop select:focus{outline:none;border-color:var(--accent)}
+  .delrow{flex:none;border:none;background:transparent;color:var(--bad);font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+  .vetgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .vetgrid .fl{display:flex;flex-direction:column;gap:4px}
+  .vetgrid label{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .vetgrid input{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;background:var(--card);color:var(--text);-webkit-appearance:none}
+  .vetgrid input:focus{outline:none;border-color:var(--accent)}
+  .vetres{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:11px;padding-top:10px;border-top:1px dashed var(--line);font-size:13.5px}
+  .vetres .vv{color:var(--warn);font-weight:800}
+  .vetres .pl{color:var(--good);font-weight:800;font-size:15px}
+  .vettotal{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:6px;padding:14px 14px;
+    background:var(--chipbg);border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);border-radius:14px;font-weight:800}
+  .vettotal .big{font-size:20px;color:var(--accent-d)}
+  .adrow{width:100%;border:1.5px dashed color-mix(in srgb,var(--accent) 40%,var(--line));background:transparent;color:var(--accent);
+    border-radius:12px;padding:11px;font-size:14.5px;font-weight:800;cursor:pointer;margin-bottom:12px}
+  .adrow:active{transform:scale(.99)}
 </style>
 </head>
 <body>
@@ -160,6 +181,21 @@
       <button class="btn sec small" id="copyBtn">📋 Copier</button>
       <button class="btn small" id="againBtn">🔄 Nouvelle comparaison</button>
     </div>
+  </div>
+
+  <div class="card" id="vetCard" style="margin-top:10px">
+    <p class="label">📉 Estimation vétusté (part locataire)</p>
+    <p class="vetintro">Pour chaque dégradation imputable, estimez la part réellement à la charge du locataire après <b>abattement pour vétusté</b>. Il n'existe pas de grille officielle : ces durées de vie sont <b>indicatives</b>, adaptez-les à votre grille.</p>
+    <div id="vetRows"></div>
+    <button class="adrow" id="addRow">＋ Ajouter un élément</button>
+    <div class="vettotal">
+      <span>Reste à charge locataire</span>
+      <span class="big" id="vetTotal">0 €</span>
+    </div>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="btn sec small" id="copyVet">📋 Copier l'estimation</button>
+    </div>
+    <p class="disclaimer" style="margin-top:12px">Estimation indicative — l'abattement pour vétusté et le montant retenu restent à la libre appréciation et sous la responsabilité du professionnel.</p>
   </div>
 
   <p class="footnote"><a href="pro.html">← Retour à l'app de scan</a> · <a href="legal.html">Mentions légales</a></p>
@@ -320,6 +356,100 @@ $('openSettings').onclick=()=>openSettings(false);
 $('closeSettings').onclick=closeSettings;
 $('saveSettings').onclick=saveSettings;
 $('overlay').onclick=e=>{ if(e.target===$('overlay')) closeSettings(); };
+
+/* ---- Estimation vétusté (grille indicative, éditable par ligne) ---- */
+// Durées de vie / franchises indicatives (années). Aucune grille officielle en France :
+// ce sont des ordres de grandeur couramment utilisés, à adapter à sa propre grille.
+const VET_PRESETS = [
+  { id:'peinture',   label:'Peinture / papier peint',            d:7,  f:1 },
+  { id:'solsouple',  label:'Sol souple (lino, PVC)',             d:7,  f:1 },
+  { id:'moquette',   label:'Moquette',                           d:7,  f:1 },
+  { id:'parquet',    label:'Parquet / stratifié',                d:15, f:2 },
+  { id:'carrelage',  label:'Carrelage / faïence',                d:20, f:2 },
+  { id:'sanitaire',  label:'Sanitaires (WC, lavabo, baignoire)', d:20, f:2 },
+  { id:'robinet',    label:'Robinetterie',                       d:10, f:1 },
+  { id:'cuisine',    label:'Meuble de cuisine',                  d:12, f:1 },
+  { id:'electro',    label:'Électroménager',                     d:8,  f:1 },
+  { id:'chauffeeau', label:"Chauffe-eau / ballon",               d:12, f:1 },
+  { id:'volet',      label:'Volet / store',                      d:15, f:2 },
+  { id:'menuiserie', label:'Porte / menuiserie intérieure',      d:20, f:2 },
+  { id:'fenetre',    label:'Fenêtre',                            d:25, f:2 },
+  { id:'serrure',    label:'Serrure / clés',                     d:10, f:0 },
+  { id:'autre',      label:'Autre élément',                      d:10, f:1 },
+];
+function vetPct(age,d,f){
+  age=+age||0; d=+d||0; f=+f||0; if(f<0)f=0;
+  if(d<=0) return 0;
+  if(age<=f) return 0;
+  if(age>=d) return 100;
+  const denom=d-f; if(denom<=0) return 100;
+  return Math.min(100, Math.max(0, (age-f)/denom*100));
+}
+function eur(n){ return Math.round(n).toLocaleString('fr-FR')+' €'; }
+function makeVetRow(){
+  const row=document.createElement('div'); row.className='vetrow';
+  const opts=VET_PRESETS.map(p=>`<option value="${p.id}">${p.label}</option>`).join('');
+  row.innerHTML=
+    `<div class="vettop">
+       <select class="v-el">${opts}</select>
+       <button class="delrow" title="Retirer">×</button>
+     </div>
+     <div class="vetgrid">
+       <div class="fl"><label>Remise en état €</label><input class="v-cost" type="number" inputmode="decimal" min="0" placeholder="0"></div>
+       <div class="fl"><label>Âge (ans)</label><input class="v-age" type="number" inputmode="decimal" min="0" placeholder="0"></div>
+       <div class="fl"><label>Durée de vie</label><input class="v-dur" type="number" inputmode="decimal" min="1"></div>
+     </div>
+     <div class="vetres">
+       <span>Vétusté <span class="vv v-pct">0 %</span> · franchise <input class="v-fr" type="number" inputmode="decimal" min="0" style="width:44px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)"> an(s)</span>
+       <span>Part locataire <span class="pl v-part">0 €</span></span>
+     </div>`;
+  const sel=row.querySelector('.v-el'), dur=row.querySelector('.v-dur'), fr=row.querySelector('.v-fr');
+  function applyPreset(){ const p=VET_PRESETS.find(x=>x.id===sel.value)||VET_PRESETS[0]; dur.value=p.d; fr.value=p.f; recalc(); }
+  sel.onchange=applyPreset;
+  row.querySelector('.delrow').onclick=()=>{ row.remove(); recalcAll(); };
+  row.querySelectorAll('.v-cost,.v-age,.v-dur,.v-fr').forEach(i=>i.oninput=recalc);
+  function recalc(){
+    const cost=+row.querySelector('.v-cost').value||0;
+    const age=+row.querySelector('.v-age').value||0;
+    const d=+dur.value||0, f=+fr.value||0;
+    const v=vetPct(age,d,f);
+    const part=cost*(1-v/100);
+    row.querySelector('.v-pct').textContent=Math.round(v)+' %';
+    row.querySelector('.v-part').textContent=eur(part);
+    row._part=part; recalcTotal();
+  }
+  row._recalc=recalc;
+  // valeurs par défaut de la 1re catégorie
+  const p0=VET_PRESETS[0]; dur.value=p0.d; fr.value=p0.f;
+  return row;
+}
+function recalcAll(){ document.querySelectorAll('#vetRows .vetrow').forEach(r=>r._recalc&&r._recalc()); recalcTotal(); }
+function recalcTotal(){
+  let t=0; document.querySelectorAll('#vetRows .vetrow').forEach(r=>{ t+=r._part||0; });
+  $('vetTotal').textContent=eur(t);
+}
+function addVetRow(){ $('vetRows').appendChild(makeVetRow()); recalcTotal(); }
+function copyVet(e){
+  const rows=[...document.querySelectorAll('#vetRows .vetrow')];
+  if(!rows.length){ return; }
+  let lines=['ESTIMATION VÉTUSTÉ (indicatif)'];
+  rows.forEach(r=>{
+    const el=r.querySelector('.v-el'); const label=el.options[el.selectedIndex].text;
+    const cost=+r.querySelector('.v-cost').value||0;
+    const age=+r.querySelector('.v-age').value||0;
+    const d=+r.querySelector('.v-dur').value||0, f=+r.querySelector('.v-fr').value||0;
+    const pct=r.querySelector('.v-pct').textContent, part=r.querySelector('.v-part').textContent;
+    lines.push(`- ${label} — remise en état ${eur(cost)} — âge ${age} an(s) (durée de vie ${d}, franchise ${f}) — vétusté ${pct} → part locataire ${part}`);
+  });
+  lines.push('');
+  lines.push('Reste à charge locataire (estimation) : '+$('vetTotal').textContent);
+  lines.push('Grille indicative — à adapter et valider par le professionnel.');
+  copyText(lines.join('\n'), e.currentTarget);
+}
+$('addRow').onclick=addVetRow;
+$('copyVet').onclick=copyVet;
+addVetRow(); // une ligne au démarrage
+
 checkBanner();
 </script>
 </body>
