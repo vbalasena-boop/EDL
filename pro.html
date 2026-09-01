@@ -201,6 +201,7 @@
     </div>
     <div class="headright">
       <span class="qchip" id="quota" title="Analyses restantes"></span>
+      <a class="iconbtn" href="comparateur.html" title="Comparateur entrée / sortie" aria-label="Comparateur entrée / sortie" style="text-decoration:none">⚖️</a>
       <button class="iconbtn" id="openSettings" aria-label="Réglages">⚙️</button>
     </div>
   </header>
@@ -324,7 +325,7 @@ function deviceId(){
   if(!d){ d = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)); localStorage.setItem(LS.device,d); }
   return d;
 }
-const APP_VERSION = '6.0';
+const APP_VERSION = '6.1';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
