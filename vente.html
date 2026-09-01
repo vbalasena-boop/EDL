@@ -190,6 +190,26 @@
   .cmpline{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13.5px;line-height:1.4}
   .cmpline b{font-weight:800}
   .cmpline .st{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:5px}
+  .premband{position:relative;background:
+      radial-gradient(600px 300px at 100% -30%,var(--tint),transparent 60%),var(--card);
+    border:1.5px solid color-mix(in srgb,var(--accent) 32%,var(--line));border-radius:26px;
+    box-shadow:var(--shadow-lg);padding:34px 30px}
+  @media(max-width:560px){ .premband{padding:24px 18px} }
+  .prembadge{display:inline-flex;align-items:center;gap:7px;background:var(--grad);color:#fff;font-weight:800;
+    font-size:12px;letter-spacing:.03em;padding:6px 12px;border-radius:999px;margin-bottom:14px;box-shadow:0 6px 14px rgba(124,58,237,.3)}
+  .ministeps{display:flex;flex-direction:column;gap:12px;margin:20px 0 24px}
+  .mstep{display:flex;gap:12px;align-items:flex-start}
+  .mstep .mn{flex:none;width:28px;height:28px;border-radius:9px;background:var(--grad);color:#fff;font-weight:800;
+    font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(124,58,237,.3)}
+  .mstep b{font-size:15.5px;font-weight:800}
+  .mstep p{margin:1px 0 0;color:var(--muted);font-size:14px}
+  .totalbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;padding:12px 14px;
+    background:var(--tint);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);border-radius:13px}
+  .totalbar span{font-size:13px;font-weight:700;color:var(--muted)}
+  .totalbar b{font-size:20px;font-weight:800;color:var(--accent-d,var(--accent))}
+  .pdfchip{display:inline-flex;align-items:center;gap:7px;margin-top:12px;font-size:12.5px;font-weight:800;color:var(--good);
+    background:color-mix(in srgb,var(--good) 12%,transparent);border:1px solid color-mix(in srgb,var(--good) 35%,transparent);
+    padding:7px 12px;border-radius:999px}
   /* Steps */
   .steps{counter-reset:s}
   .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 22px;box-shadow:var(--shadow);position:relative;
@@ -397,34 +417,34 @@
   </div>
 </section>
 
-<!-- COMPARATEUR ENTRÉE / SORTIE -->
+<!-- COMPARATEUR ENTRÉE / SORTIE (premium) -->
 <section class="wrap" style="padding-top:16px">
-  <div class="cmpx">
-    <div>
-      <p class="kicker rv"><svg class="ico" style="vertical-align:-2px"><use href="#i-scale"/></svg> Entrée · Sortie</p>
-      <h2 class="rv">Comparez l'entrée et la sortie, automatiquement</h2>
-      <p class="sub rv" style="margin-bottom:0">Déposez l'ancien état des lieux (photo du papier, scan ou PDF) et le nouveau. Immoscan les lit, repère ce qui a changé — et surtout ce qui est <b>imputable au locataire</b>. Une grille de <b>vétusté</b> chiffre même le <b>reste à charge</b>, avec un <b>dossier PDF</b> prêt à joindre.</p>
-      <ul class="catlist rv">
-        <li><span class="tagpill t-bad">DÉGRADATION</span> Nouveau défaut absent à l'entrée — imputable au locataire.</li>
-        <li><span class="tagpill t-wear">USURE / VÉTUSTÉ</span> Évolution normale liée à l'usage et au temps — non imputable.</li>
-        <li><span class="tagpill t-old">DÉJÀ PRÉSENT</span> Le défaut figurait déjà à l'entrée — non imputable.</li>
-        <li><span class="tagpill t-ok">IDENTIQUE</span> Aucun changement constaté.</li>
-      </ul>
-      <a class="btn rv" href="comparateur.html"><svg class="ico"><use href="#i-scale"/></svg> Ouvrir le comparateur</a>
-    </div>
-    <div class="cmpcard rv" aria-hidden="true">
-      <div class="top"><span class="dot"></span> Comparatif — Cuisine</div>
-      <div class="cmpline"><b>Murs</b> — peinture
-        <div class="st"><span>Entrée : Bon → Sortie : Mauvais</span><span class="tagpill t-bad">DÉGRADATION</span></div>
+  <div class="premband rv">
+    <div class="cmpx">
+      <div>
+        <span class="prembadge"><svg class="ico"><use href="#i-scale"/></svg> Spécial gestion locative</span>
+        <h2 style="margin-bottom:12px">Entrée vs sortie : le litige tranché, chiffré, exporté</h2>
+        <p class="sub" style="margin-bottom:0">Déposez l'ancien état des lieux (photo du papier, scan ou <b>PDF</b>) et le nouveau. Immoscan fait le reste — jusqu'au <b>montant récupérable</b> sur le dépôt de garantie.</p>
+        <div class="ministeps">
+          <div class="mstep"><span class="mn">1</span><div><b>Importez les deux EDL</b><p>Photos, scans ou PDF — même manuscrits. Aucune ressaisie.</p></div></div>
+          <div class="mstep"><span class="mn">2</span><div><b>Comparaison automatique</b><p>Chaque écart classé : dégradation imputable, usure / vétusté, déjà présent, identique.</p></div></div>
+          <div class="mstep"><span class="mn">3</span><div><b>Vétusté chiffrée + dossier PDF</b><p>La grille calcule le reste à charge du locataire ; un PDF propre est prêt à joindre.</p></div></div>
+        </div>
+        <a class="btn" href="comparateur.html"><svg class="ico"><use href="#i-scale"/></svg> Ouvrir le comparateur</a>
       </div>
-      <div class="cmpline"><b>Sol</b> — carrelage
-        <div class="st"><span>Entrée : Bon → Sortie : État d'usage</span><span class="tagpill t-wear">USURE</span></div>
-      </div>
-      <div class="cmpline"><b>Plan de travail</b>
-        <div class="st"><span>Rayure déjà notée à l'entrée</span><span class="tagpill t-old">DÉJÀ PRÉSENT</span></div>
-      </div>
-      <div class="cmpline"><b>Fenêtre</b>
-        <div class="st"><span>Entrée : Bon → Sortie : Bon</span><span class="tagpill t-ok">IDENTIQUE</span></div>
+      <div class="cmpcard" aria-hidden="true">
+        <div class="top"><span class="dot"></span> Comparatif — Cuisine</div>
+        <div class="cmpline"><b>Murs</b> — peinture
+          <div class="st"><span>Entrée : Bon → Sortie : Mauvais</span><span class="tagpill t-bad">DÉGRADATION</span></div>
+        </div>
+        <div class="cmpline"><b>Sol</b> — carrelage
+          <div class="st"><span>Entrée : Bon → Sortie : État d'usage</span><span class="tagpill t-wear">USURE</span></div>
+        </div>
+        <div class="cmpline"><b>Plan de travail</b>
+          <div class="st"><span>Rayure déjà notée à l'entrée</span><span class="tagpill t-old">DÉJÀ PRÉSENT</span></div>
+        </div>
+        <div class="totalbar"><span>Reste à charge locataire</span><b>579 €</b></div>
+        <span class="pdfchip"><svg class="ico"><use href="#i-docs"/></svg> Dossier PDF prêt à joindre</span>
       </div>
     </div>
   </div>
@@ -479,6 +499,7 @@
         <ul>
           <li><svg class="ico"><use href="#i-check"/></svg> 400 analyses par mois</li>
           <li><svg class="ico"><use href="#i-check"/></svg> Caméra rafale + inventaire meublé</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Comparateur entrée/sortie + vétusté + PDF</li>
           <li><svg class="ico"><use href="#i-check"/></svg> Hors-ligne &amp; mises à jour incluses</li>
           <li><svg class="ico"><use href="#i-check"/></svg> Support par email</li>
         </ul>
