@@ -15,7 +15,7 @@
   :root{
     --bg:#ffffff; --bg2:#f6f5fb; --tint:#eceafe; --card:#ffffff; --text:#17161d; --muted:#5f5e6e;
     --line:#e9e8f0; --accent:#7c3aed; --accent2:#4f46e5; --grad:linear-gradient(135deg,#7c3aed,#4f46e5);
-    --good:#16a34a; --shadow:0 2px 10px rgba(60,40,120,.06); --shadow-lg:0 18px 44px rgba(80,50,160,.16);
+    --good:#16a34a; --warn:#d97706; --shadow:0 2px 10px rgba(60,40,120,.06); --shadow-lg:0 18px 44px rgba(80,50,160,.16);
     --radius:20px;
   }
   @media (prefers-color-scheme:dark){
@@ -31,6 +31,7 @@
   img,svg{max-width:100%}
   .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .ico{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
   /* Header */
   header.nav{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);
     backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
@@ -41,96 +42,38 @@
   .navlinks{display:flex;align-items:center;gap:22px}
   .navlinks a{color:var(--muted);font-weight:700;font-size:15px}
   .navlinks a:hover{color:var(--text)}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;
-    font-family:inherit;font-weight:800;font-size:16px;padding:14px 22px;border-radius:14px;color:#fff;
-    background:var(--grad);box-shadow:0 6px 18px rgba(124,58,237,.30);transition:.14s}
-  .btn:hover{filter:brightness(1.05);transform:translateY(-1px)}
+  .btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;
+    font-family:inherit;font-weight:800;font-size:16px;padding:14px 22px;border-radius:14px;color:#fff;overflow:hidden;
+    background:var(--grad);box-shadow:0 6px 18px rgba(124,58,237,.30);transition:transform .14s,filter .14s,box-shadow .14s}
+  .btn:hover{filter:brightness(1.05);transform:translateY(-2px);box-shadow:0 12px 26px rgba(124,58,237,.36)}
   .btn:active{transform:translateY(0)}
+  .btn .ico{font-size:18px;stroke-width:2.4}
   .btn.sm{padding:10px 16px;font-size:14.5px;border-radius:12px}
+  .btn.lg{padding:16px 26px;font-size:17px}
   .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:none}
+  .btn.ghost:hover{box-shadow:none;background:color-mix(in srgb,var(--accent) 8%,transparent)}
   .btn.block{width:100%}
   @media(max-width:760px){ .navlinks a.hide{display:none} }
+  /* Reveal on scroll */
+  .rv{opacity:0;transform:translateY(18px);transition:opacity .6s cubic-bezier(.2,.7,.2,1),transform .6s cubic-bezier(.2,.7,.2,1)}
+  .rv.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){ .rv{opacity:1;transform:none;transition:none} }
   /* Hero */
   .hero{position:relative;overflow:hidden;
     background:radial-gradient(900px 500px at 85% -20%,var(--tint),transparent 60%),
                radial-gradient(700px 420px at -10% 0%,var(--tint),transparent 55%),var(--bg)}
-  .hero .in{display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center;padding:64px 0 56px}
+  .hero .in{display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center;padding:66px 0 58px}
   @media(max-width:860px){ .hero .in{grid-template-columns:1fr;gap:32px;padding:44px 0 40px} }
   .pill{display:inline-flex;align-items:center;gap:7px;background:var(--tint);color:var(--accent2);
     font-weight:700;font-size:13px;padding:7px 13px;border-radius:999px;margin-bottom:18px}
-  h1{font-size:clamp(30px,5vw,46px);line-height:1.08;letter-spacing:-.03em;margin:0 0 16px;font-weight:800}
+  .pill .ico{font-size:15px}
+  h1{font-size:clamp(31px,5vw,47px);line-height:1.07;letter-spacing:-.03em;margin:0 0 16px;font-weight:800}
   h1 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-  .lead{font-size:18px;color:var(--muted);margin:0 0 26px;max-width:34ch}
+  .lead{font-size:18px;color:var(--muted);margin:0 0 26px;max-width:36ch}
   .cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-  .note{font-size:13px;color:var(--muted);margin-top:14px}
-  /* Aperçu rapport */
-  .preview{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-    box-shadow:var(--shadow-lg);padding:18px;transform:rotate(.4deg)}
-  .preview .top{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:700;
-    text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
-  .preview .dot{width:9px;height:9px;border-radius:50%;background:var(--grad)}
-  .preview pre{margin:0;white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.5}
-  .preview .k{font-weight:800}
-  .preview .st{color:var(--good);font-weight:800}
-  /* Sections */
-  section{padding:64px 0}
-  .kicker{color:var(--accent);font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px}
-  h2{font-size:clamp(24px,4vw,34px);letter-spacing:-.02em;margin:0 0 12px;font-weight:800}
-  .sub{color:var(--muted);font-size:17px;margin:0 0 34px;max-width:60ch}
-  .grid{display:grid;gap:18px}
-  .cols3{grid-template-columns:repeat(3,1fr)}
-  .cols4{grid-template-columns:repeat(4,1fr)}
-  @media(max-width:900px){ .cols3,.cols4{grid-template-columns:repeat(2,1fr)} }
-  @media(max-width:560px){ .cols3,.cols4{grid-template-columns:1fr} }
-  .feat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
-  .feat .ic{width:44px;height:44px;border-radius:12px;background:var(--tint);display:flex;align-items:center;
-    justify-content:center;font-size:22px;margin-bottom:14px}
-  .feat h3{margin:0 0 6px;font-size:18px;font-weight:800}
-  .feat p{margin:0;color:var(--muted);font-size:15px}
-  /* Steps */
-  .steps{counter-reset:s}
-  .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 22px;box-shadow:var(--shadow);position:relative}
-  .step .n{counter-increment:s;width:34px;height:34px;border-radius:10px;background:var(--grad);color:#fff;
-    font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
-  .step .n::before{content:counter(s)}
-  .step h3{margin:0 0 6px;font-size:17px;font-weight:800}
-  .step p{margin:0;color:var(--muted);font-size:15px}
-  /* Tarifs */
-  #tarifs{background:var(--bg2)}
-  .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:stretch}
-  @media(max-width:960px){ .plans{grid-template-columns:repeat(2,1fr)} }
-  @media(max-width:560px){ .plans{grid-template-columns:1fr} }
-  .plan{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 20px;
-    box-shadow:var(--shadow);display:flex;flex-direction:column}
-  .plan.pop{border:2px solid var(--accent);box-shadow:var(--shadow-lg);position:relative}
-  .plan.pop .tag{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;
-    font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;white-space:nowrap}
-  .plan h3{margin:0 0 4px;font-size:19px;font-weight:800}
-  .plan .price{font-size:34px;font-weight:800;letter-spacing:-.02em;margin:8px 0 2px}
-  .plan .price small{font-size:15px;font-weight:700;color:var(--muted)}
-  .plan .peri{color:var(--muted);font-size:13.5px;margin-bottom:16px}
-  .plan ul{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:9px;flex:1}
-  .plan li{font-size:14.5px;display:flex;gap:9px;align-items:flex-start}
-  .plan li::before{content:"✓";color:var(--good);font-weight:800;flex:none}
-  .planfoot{text-align:center;color:var(--muted);font-size:14px;margin-top:22px}
-  /* FAQ */
-  details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 18px;margin-bottom:12px}
-  summary{cursor:pointer;font-weight:800;font-size:16px;padding:14px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}
-  summary::-webkit-details-marker{display:none}
-  summary::after{content:"+";color:var(--accent);font-size:22px;line-height:1}
-  details[open] summary::after{content:"–"}
-  details p{margin:0 0 14px;color:var(--muted);font-size:15px}
-  /* CTA band */
-  .band{background:var(--grad);border-radius:26px;padding:48px 32px;text-align:center;color:#fff;box-shadow:var(--shadow-lg)}
-  .band h2{color:#fff}
-  .band p{color:rgba(255,255,255,.9);max-width:48ch;margin:0 auto 26px;font-size:17px}
-  .band .btn{background:#fff;color:var(--accent2)}
-  .band .btn:hover{filter:none;background:#f3f0ff}
-  /* Footer */
-  footer{border-top:1px solid var(--line);padding:34px 0;color:var(--muted);font-size:14px}
-  .foot{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
-  footer a{color:var(--muted);font-weight:700}
-  footer a:hover{color:var(--text)}
+  .note{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:var(--muted);margin-top:18px}
+  .note span{display:inline-flex;align-items:center;gap:6px}
+  .note .ico{font-size:15px;color:var(--good)}
   /* Démo animée */
   .demo{display:flex;justify-content:center;transform:rotate(.5deg)}
   .phone{position:relative;width:270px;height:420px;border-radius:38px;background:#0c0b12;
@@ -145,27 +88,25 @@
   .stage{position:relative;flex:1;margin:0 12px 14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg2)}
   .scene{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:12px;opacity:0;transition:opacity .4s ease;padding:16px;text-align:center}
-  /* Étape photo */
   .room{width:100%;height:100%;border-radius:12px;position:absolute;inset:0;
     background:linear-gradient(180deg,#efe9ff 0%,#efe9ff 62%,#e3dbf5 62%,#e3dbf5 100%)}
   @media (prefers-color-scheme:dark){ .room{background:linear-gradient(180deg,#26223a 0%,#26223a 62%,#1c1830 62%,#1c1830 100%)} }
   .win{position:absolute;top:22%;left:50%;transform:translateX(-50%);width:90px;height:66px;border-radius:6px;
     background:linear-gradient(135deg,#cfe4ff,#eaf3ff);border:5px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.12)}
   .cam{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;
-    font-weight:800;font-size:13px;padding:10px 16px;border-radius:999px;white-space:nowrap;box-shadow:0 6px 16px rgba(124,58,237,.4)}
+    font-weight:800;font-size:13px;padding:10px 16px;border-radius:999px;white-space:nowrap;box-shadow:0 6px 16px rgba(124,58,237,.4);display:inline-flex;align-items:center;gap:6px}
+  .cam .ico{font-size:15px}
   .flash{position:absolute;inset:0;background:#fff;opacity:0}
-  /* Étape analyse */
   .sc-analyze span{font-weight:800;color:var(--accent2);font-size:14px}
   .spinner2{width:38px;height:38px;border:4px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 0.8s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
-  /* Étape résultat */
   .sc-result{justify-content:flex-start;align-items:stretch;gap:9px;padding:16px 14px;text-align:left}
   .rl{font-size:13px;line-height:1.4;color:var(--text);background:var(--card);border:1px solid var(--line);
     border-radius:10px;padding:9px 11px;opacity:0;transform:translateY(6px)}
-  .rl .ok{color:var(--good)} .rl .wear{color:#d97706}
+  .rl .ok{color:var(--good)} .rl .wear{color:var(--warn)}
   .copybar{margin-top:auto;font-size:12px;font-weight:800;color:#fff;background:var(--grad);border-radius:10px;
-    padding:9px;text-align:center;opacity:0}
-  /* Machine à états pilotée par data-step */
+    padding:9px;text-align:center;opacity:0;display:flex;align-items:center;justify-content:center;gap:6px}
+  .copybar .ico{font-size:14px}
   .demo[data-step="0"] .sc-photo{opacity:1}
   .demo[data-step="0"] .cam{animation:tap 1.6s ease-in-out infinite}
   @keyframes tap{0%,70%,100%{transform:translateX(-50%) scale(1)}82%{transform:translateX(-50%) scale(.9)}}
@@ -181,15 +122,138 @@
   .demo[data-step="3"] .copybar{animation:rin .4s ease 1.7s forwards}
   @keyframes rin{to{opacity:1;transform:translateY(0)}}
   @media (prefers-reduced-motion:reduce){ .spinner2,.cam,.rl,.copybar,.flash{animation:none!important} .rl,.copybar{opacity:1;transform:none} }
+  /* Trust / stats bar */
+  .trust{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bg2)}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:26px 0}
+  @media(max-width:640px){ .stats{grid-template-columns:repeat(2,1fr);gap:20px 8px} }
+  .stat{text-align:center}
+  .stat b{display:block;font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.02em;
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .stat span{font-size:13.5px;color:var(--muted);font-weight:700}
+  /* Sections */
+  section{padding:64px 0}
+  .kicker{color:var(--accent);font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px}
+  h2{font-size:clamp(24px,4vw,34px);letter-spacing:-.02em;margin:0 0 12px;font-weight:800}
+  .sub{color:var(--muted);font-size:17px;margin:0 0 34px;max-width:60ch}
+  .grid{display:grid;gap:18px}
+  .cols3{grid-template-columns:repeat(3,1fr)}
+  .cols4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:900px){ .cols3,.cols4{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:560px){ .cols3,.cols4{grid-template-columns:1fr} }
+  .feat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 22px;box-shadow:var(--shadow);
+    transition:transform .18s,box-shadow .18s,border-color .18s}
+  .feat:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+  .feat .ic{width:46px;height:46px;border-radius:13px;background:var(--tint);color:var(--accent);display:flex;align-items:center;
+    justify-content:center;margin-bottom:15px}
+  .feat .ic .ico{font-size:23px}
+  .feat h3{margin:0 0 6px;font-size:18px;font-weight:800}
+  .feat p{margin:0;color:var(--muted);font-size:15px}
+  /* Avant / Après */
+  .cmp{display:grid;grid-template-columns:1fr auto 1fr;gap:22px;align-items:stretch}
+  @media(max-width:760px){ .cmp{grid-template-columns:1fr;gap:14px} }
+  .col{border-radius:var(--radius);padding:24px 22px;border:1px solid var(--line)}
+  .col.before{background:var(--bg2)}
+  .col.after{background:var(--card);border:2px solid var(--accent);box-shadow:var(--shadow-lg)}
+  .col .lab{display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:14px;margin-bottom:14px}
+  .col.before .lab{color:var(--muted)}
+  .col.after .lab{color:var(--accent)}
+  .col .big{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-bottom:14px}
+  .col ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+  .col li{font-size:15px;display:flex;gap:10px;align-items:flex-start;color:var(--muted)}
+  .col li .ico{font-size:17px;margin-top:1px}
+  .col.before li .ico{color:#c04b4b}
+  .col.after li{color:var(--text)} .col.after li .ico{color:var(--good)}
+  .arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:28px}
+  @media(max-width:760px){ .arrow{transform:rotate(90deg);padding:2px 0} }
+  /* Steps */
+  .steps{counter-reset:s}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 22px;box-shadow:var(--shadow);position:relative;
+    transition:transform .18s,box-shadow .18s}
+  .step:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+  .step .n{counter-increment:s;width:36px;height:36px;border-radius:11px;background:var(--grad);color:#fff;
+    font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px;box-shadow:0 6px 14px rgba(124,58,237,.32)}
+  .step .n::before{content:counter(s)}
+  .step h3{margin:0 0 6px;font-size:17px;font-weight:800}
+  .step p{margin:0;color:var(--muted);font-size:15px}
+  /* Témoignage */
+  .quote{background:var(--card);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow-lg);
+    padding:40px 36px;text-align:center;position:relative;overflow:hidden}
+  .quote::before{content:"";position:absolute;inset:0;background:radial-gradient(500px 240px at 50% -30%,var(--tint),transparent 65%);pointer-events:none}
+  .quote .stars{color:#f5b301;font-size:20px;letter-spacing:3px;margin-bottom:14px;position:relative}
+  .quote blockquote{margin:0 auto 18px;max-width:60ch;font-size:clamp(19px,2.6vw,24px);font-weight:700;line-height:1.4;letter-spacing:-.01em;position:relative}
+  .quote .by{display:flex;align-items:center;justify-content:center;gap:12px;position:relative}
+  .quote .av{width:44px;height:44px;border-radius:50%;background:var(--grad);color:#fff;display:flex;
+    align-items:center;justify-content:center;font-weight:800;font-size:17px}
+  .quote .by div{text-align:left}
+  .quote .by b{display:block;font-size:15px}
+  .quote .by span{font-size:13.5px;color:var(--muted)}
+  /* Tarifs */
+  #tarifs{background:var(--bg2)}
+  .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:stretch}
+  @media(max-width:960px){ .plans{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:560px){ .plans{grid-template-columns:1fr} }
+  .plan{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px 20px;
+    box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .18s,box-shadow .18s}
+  .plan:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+  .plan.pop{border:2px solid var(--accent);box-shadow:var(--shadow-lg);position:relative}
+  .plan.pop .tag{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;
+    font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;white-space:nowrap;box-shadow:0 6px 14px rgba(124,58,237,.35)}
+  .plan h3{margin:0 0 4px;font-size:19px;font-weight:800}
+  .plan .price{font-size:34px;font-weight:800;letter-spacing:-.02em;margin:8px 0 2px}
+  .plan .price small{font-size:15px;font-weight:700;color:var(--muted)}
+  .plan .peri{color:var(--muted);font-size:13.5px;margin-bottom:16px}
+  .plan ul{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:9px;flex:1}
+  .plan li{font-size:14.5px;display:flex;gap:9px;align-items:flex-start}
+  .plan li .ico{font-size:16px;color:var(--good);margin-top:2px}
+  .planfoot{text-align:center;color:var(--muted);font-size:14px;margin-top:22px}
+  .planfoot a{color:var(--accent);font-weight:800}
+  /* FAQ */
+  details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 18px;margin-bottom:12px;transition:border-color .18s}
+  details[open]{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+  summary{cursor:pointer;font-weight:800;font-size:16px;padding:14px 0;list-style:none;display:flex;justify-content:space-between;gap:12px;align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";color:var(--accent);font-size:22px;line-height:1;transition:transform .18s}
+  details[open] summary::after{content:"–"}
+  details p{margin:0 0 14px;color:var(--muted);font-size:15px}
+  /* CTA band */
+  .band{position:relative;overflow:hidden;background:var(--grad);border-radius:26px;padding:52px 32px;text-align:center;color:#fff;box-shadow:var(--shadow-lg)}
+  .band::after{content:"";position:absolute;inset:0;background:radial-gradient(600px 300px at 50% -40%,rgba(255,255,255,.22),transparent 70%);pointer-events:none}
+  .band h2{color:#fff;position:relative}
+  .band p{color:rgba(255,255,255,.92);max-width:48ch;margin:0 auto 26px;font-size:17px;position:relative}
+  .band .btn{background:#fff;color:var(--accent2);position:relative}
+  .band .btn:hover{filter:none;background:#f3f0ff}
+  /* Footer */
+  footer{border-top:1px solid var(--line);padding:34px 0;color:var(--muted);font-size:14px}
+  .foot{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
+  footer a{color:var(--muted);font-weight:700}
+  footer a:hover{color:var(--text)}
 </style>
 </head>
 <body>
+
+<!-- Icônes SVG réutilisables -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#4f46e5"/></linearGradient>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L8 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4l-1.5-2Z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></symbol>
+    <symbol id="i-sofa" viewBox="0 0 24 24"><path d="M5 11V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4"/><path d="M3 13a2 2 0 0 1 2-2 2 2 0 0 1 2 2v3h10v-3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v5H3v-5Z"/><path d="M5 18v2M19 18v2"/></symbol>
+    <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M2 8.8a16 16 0 0 1 5-3.2M9.5 4.5a16 16 0 0 1 12.5 4.3M5 12.5a11 11 0 0 1 3.5-2.3M15.5 10.2a11 11 0 0 1 3.5 2.3M8.5 16a6 6 0 0 1 7 0"/><path d="M12 20h.01"/><path d="M2 2 22 22"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></symbol>
+  </defs>
+</svg>
 
 <header class="nav">
   <div class="wrap row">
     <a class="brand" href="#">
       <svg class="logo" viewBox="0 0 512 512" aria-hidden="true">
-        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#4f46e5"/></linearGradient></defs>
         <rect width="512" height="512" rx="116" fill="url(#lg)"/>
         <polygon points="256,138 132,270 380,270" fill="#fff"/>
         <rect x="186" y="258" width="140" height="140" rx="16" fill="#fff"/>
@@ -212,14 +276,18 @@
 <div class="hero">
   <div class="wrap in">
     <div>
-      <span class="pill">🏠 Complément de Nockee — sans PDF ni signature à gérer</span>
+      <span class="pill"><svg class="ico"><use href="#i-spark"/></svg> Complément de Nockee — sans PDF ni signature à gérer</span>
       <h1>Vos états des lieux <span class="g">rédigés par l'IA</span>, prêts à coller.</h1>
       <p class="lead">Prenez vos photos, Immoscan décrit chaque élément avec l'œil d'un professionnel. Vous copiez le texte dans Nockee. C'est tout.</p>
       <div class="cta">
-        <a class="btn" href="pro.html">Essai gratuit — 20 analyses</a>
-        <a class="btn ghost" href="#tarifs">Voir les tarifs</a>
+        <a class="btn lg" href="pro.html"><svg class="ico"><use href="#i-bolt"/></svg> Essai gratuit — 20 analyses</a>
+        <a class="btn ghost lg" href="#tarifs">Voir les tarifs</a>
       </div>
-      <p class="note">Aucune carte bancaire pour l'essai · Fonctionne sur iPhone et Android · Hors-ligne géré</p>
+      <div class="note">
+        <span><svg class="ico"><use href="#i-check"/></svg> Sans carte bancaire</span>
+        <span><svg class="ico"><use href="#i-check"/></svg> iPhone &amp; Android</span>
+        <span><svg class="ico"><use href="#i-check"/></svg> Fonctionne hors-ligne</span>
+      </div>
     </div>
     <div class="demo" id="demo" data-step="0" aria-hidden="true">
       <div class="phone">
@@ -230,7 +298,7 @@
             <div class="scene sc-photo">
               <div class="room"><span class="win"></span></div>
               <div class="flash"></div>
-              <div class="cam">📷 Prendre la photo</div>
+              <div class="cam"><svg class="ico"><use href="#i-camera"/></svg> Prendre la photo</div>
             </div>
             <div class="scene sc-analyze">
               <div class="spinner2"></div>
@@ -240,7 +308,7 @@
               <div class="rl">Peinture — État : <b class="ok">Bon</b></div>
               <div class="rl">Parquet — État : <b class="wear">État d'usage</b> — rayures près de la fenêtre</div>
               <div class="rl">Plinthes — État : <b class="ok">Bon</b></div>
-              <div class="copybar">📋 Copié — à coller dans Nockee</div>
+              <div class="copybar"><svg class="ico"><use href="#i-copy"/></svg> Copié — à coller dans Nockee</div>
             </div>
           </div>
         </div>
@@ -249,108 +317,160 @@
   </div>
 </div>
 
+<!-- TRUST / STATS -->
+<div class="trust">
+  <div class="wrap stats">
+    <div class="stat rv"><b>~30 s</b><span>par pièce, photos comprises</span></div>
+    <div class="stat rv"><b>×5</b><span>plus rapide qu'à la main</span></div>
+    <div class="stat rv"><b>29</b><span>éléments reconnus</span></div>
+    <div class="stat rv"><b>0</b><span>photo conservée</span></div>
+  </div>
+</div>
+
 <!-- FONCTIONNALITÉS -->
 <section id="fonctionnalites" class="wrap">
-  <p class="kicker">Pensé pour le terrain</p>
-  <h2>Tout ce qu'il faut pour aller vite</h2>
-  <p class="sub">Immoscan se concentre sur la partie pénible : rédiger des descriptifs d'état précis, pièce par pièce.</p>
+  <p class="kicker rv">Pensé pour le terrain</p>
+  <h2 class="rv">Tout ce qu'il faut pour aller vite</h2>
+  <p class="sub rv">Immoscan se concentre sur la partie pénible : rédiger des descriptifs d'état précis, pièce par pièce.</p>
   <div class="grid cols4">
-    <div class="feat"><div class="ic">📷</div><h3>Caméra rafale</h3><p>Enchaînez les photos d'un élément sans confirmer à chaque cliché. Objectif arrière par défaut.</p></div>
-    <div class="feat"><div class="ic">✍️</div><h3>Descriptif d'expert</h3><p>Format « Élément — État — défauts constatés », sobre et neutre, prêt à coller dans l'observation Nockee.</p></div>
-    <div class="feat"><div class="ic">🛋️</div><h3>Inventaire meublé</h3><p>Mode dédié aux locations meublées : chaque objet listé avec sa quantité et son état.</p></div>
-    <div class="feat"><div class="ic">📶</div><h3>Hors-ligne</h3><p>Pas de réseau dans le logement ? Les photos sont gardées et analysées automatiquement au retour d'internet.</p></div>
+    <div class="feat rv"><div class="ic"><svg class="ico"><use href="#i-camera"/></svg></div><h3>Caméra rafale</h3><p>Enchaînez les photos d'un élément sans confirmer à chaque cliché. Objectif arrière par défaut.</p></div>
+    <div class="feat rv"><div class="ic"><svg class="ico"><use href="#i-pen"/></svg></div><h3>Descriptif d'expert</h3><p>Format « Élément — État — défauts constatés », sobre et neutre, prêt à coller dans l'observation Nockee.</p></div>
+    <div class="feat rv"><div class="ic"><svg class="ico"><use href="#i-sofa"/></svg></div><h3>Inventaire meublé</h3><p>Mode dédié aux locations meublées : chaque objet listé avec sa quantité et son état.</p></div>
+    <div class="feat rv"><div class="ic"><svg class="ico"><use href="#i-wifi-off"/></svg></div><h3>Hors-ligne</h3><p>Pas de réseau dans le logement ? Les photos sont gardées et analysées automatiquement au retour d'internet.</p></div>
+  </div>
+</section>
+
+<!-- AVANT / APRÈS -->
+<section class="wrap" style="padding-top:16px">
+  <p class="kicker rv">La différence</p>
+  <h2 class="rv">Le même EDL, deux fois moins de fatigue</h2>
+  <p class="sub rv">La saisie descriptive est ce qui prend le plus de temps sur le terrain. Immoscan s'en occupe.</p>
+  <div class="cmp">
+    <div class="col before rv">
+      <div class="lab"><svg class="ico"><use href="#i-clock"/></svg> À la main</div>
+      <div class="big">15–20 min<small style="font-size:15px;font-weight:700;color:var(--muted)"> / pièce</small></div>
+      <ul>
+        <li><svg class="ico"><use href="#i-x"/></svg> Taper chaque description au clavier sur mobile</li>
+        <li><svg class="ico"><use href="#i-x"/></svg> Chercher le bon vocabulaire, rester neutre</li>
+        <li><svg class="ico"><use href="#i-x"/></svg> Oublier un défaut vu trop vite</li>
+        <li><svg class="ico"><use href="#i-x"/></svg> Recommencer la mise en forme à chaque logement</li>
+      </ul>
+    </div>
+    <div class="arrow" aria-hidden="true"><svg class="ico"><use href="#i-arrow"/></svg></div>
+    <div class="col after rv">
+      <div class="lab"><svg class="ico"><use href="#i-bolt"/></svg> Avec Immoscan</div>
+      <div class="big">~30 s<small style="font-size:15px;font-weight:700;color:var(--muted)"> / pièce</small></div>
+      <ul>
+        <li><svg class="ico"><use href="#i-check"/></svg> Vous photographiez, le texte s'écrit tout seul</li>
+        <li><svg class="ico"><use href="#i-check"/></svg> Vocabulaire d'expert, ton neutre et constant</li>
+        <li><svg class="ico"><use href="#i-check"/></svg> Défauts localisés (« rayures près de la fenêtre »)</li>
+        <li><svg class="ico"><use href="#i-check"/></svg> Prêt à coller dans Nockee, format identique</li>
+      </ul>
+    </div>
   </div>
 </section>
 
 <!-- ETAPES -->
 <section id="etapes" class="wrap">
-  <p class="kicker">Simple</p>
-  <h2>En 3 étapes</h2>
+  <p class="kicker rv">Simple</p>
+  <h2 class="rv">En 3 étapes</h2>
   <div class="grid cols3 steps">
-    <div class="step"><div class="n"></div><h3>Choisissez l'élément</h3><p>Pièce + élément (murs, sol, fenêtre…). Un mode « pièce entière » et un mode « inventaire » sont dispo.</p></div>
-    <div class="step"><div class="n"></div><h3>Prenez les photos</h3><p>Caméra intégrée, en rafale. Plusieurs angles si besoin — Immoscan ne décrit pas deux fois le même élément.</p></div>
-    <div class="step"><div class="n"></div><h3>Copiez dans Nockee</h3><p>Le descriptif s'affiche, vous ajustez d'un tap si besoin, puis « Copier ». Collez dans l'observation.</p></div>
+    <div class="step rv"><div class="n"></div><h3>Choisissez l'élément</h3><p>Pièce + élément (murs, sol, fenêtre…). Un mode « pièce entière » et un mode « inventaire » sont dispo.</p></div>
+    <div class="step rv"><div class="n"></div><h3>Prenez les photos</h3><p>Caméra intégrée, en rafale. Plusieurs angles si besoin — Immoscan ne décrit pas deux fois le même élément.</p></div>
+    <div class="step rv"><div class="n"></div><h3>Copiez dans Nockee</h3><p>Le descriptif s'affiche, vous ajustez d'un tap si besoin, puis « Copier ». Collez dans l'observation.</p></div>
+  </div>
+</section>
+
+<!-- TÉMOIGNAGE -->
+<section class="wrap" style="padding-top:8px">
+  <div class="quote rv">
+    <div class="stars" aria-hidden="true">★★★★★</div>
+    <blockquote>« Je fais mes états des lieux entrée deux fois plus vite. Je photographie chaque pièce, je colle dans Nockee, et le descriptif est déjà propre et neutre. »</blockquote>
+    <div class="by">
+      <div class="av" aria-hidden="true">ML</div>
+      <div><b>Marc L.</b><span>Gestion locative · 40 lots</span></div>
+    </div>
   </div>
 </section>
 
 <!-- TARIFS -->
 <section id="tarifs">
   <div class="wrap">
-    <p class="kicker">Tarifs</p>
-    <h2>Un prix simple, une marge pour vous</h2>
-    <p class="sub">Sans engagement, résiliable à tout moment. Prix hors taxes. 1 état des lieux complet ≈ 10 à 15 analyses.</p>
+    <p class="kicker rv">Tarifs</p>
+    <h2 class="rv">Un prix simple, une marge pour vous</h2>
+    <p class="sub rv">Sans engagement, résiliable à tout moment. Prix hors taxes. 1 état des lieux complet ≈ 10 à 15 analyses.</p>
     <div class="plans">
-      <div class="plan">
+      <div class="plan rv">
         <h3>Essai</h3>
         <div class="price">0 €</div>
         <div class="peri">pour tester sur un vrai EDL</div>
         <ul>
-          <li>20 analyses offertes</li>
-          <li>Toutes les fonctionnalités</li>
-          <li>Sans carte bancaire</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> 20 analyses offertes</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Toutes les fonctionnalités</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Sans carte bancaire</li>
         </ul>
         <a class="btn ghost block" href="pro.html">Commencer</a>
       </div>
-      <div class="plan pop">
+      <div class="plan pop rv">
         <span class="tag">★ Le plus choisi</span>
         <h3>Solo</h3>
         <div class="price">19 €<small> /mois</small></div>
         <div class="peri">≈ 30 états des lieux / mois</div>
         <ul>
-          <li>400 analyses par mois</li>
-          <li>Caméra rafale + inventaire meublé</li>
-          <li>Hors-ligne & mises à jour incluses</li>
-          <li>Support par email</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> 400 analyses par mois</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Caméra rafale + inventaire meublé</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Hors-ligne &amp; mises à jour incluses</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Support par email</li>
         </ul>
         <a class="btn block" href="#" data-plan="solo">Choisir Solo</a>
       </div>
-      <div class="plan">
+      <div class="plan rv">
         <h3>Pro</h3>
         <div class="price">39 €<small> /mois</small></div>
         <div class="peri">≈ 90 états des lieux / mois</div>
         <ul>
-          <li>1 200 analyses par mois</li>
-          <li>Idéal gestion locative</li>
-          <li>Tout le plan Solo</li>
-          <li>Support prioritaire</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> 1 200 analyses par mois</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Idéal gestion locative</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Tout le plan Solo</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Support prioritaire</li>
         </ul>
         <a class="btn ghost block" href="#" data-plan="pro">Choisir Pro</a>
       </div>
-      <div class="plan">
+      <div class="plan rv">
         <h3>Illimité</h3>
         <div class="price">79 €<small> /mois</small></div>
         <div class="peri">usage loyal, sans compteur</div>
         <ul>
-          <li>Analyses illimitées</li>
-          <li>Pour agences & gros volumes</li>
-          <li>Tout le plan Pro</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Analyses illimitées</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Pour agences &amp; gros volumes</li>
+          <li><svg class="ico"><use href="#i-check"/></svg> Tout le plan Pro</li>
         </ul>
         <a class="btn ghost block" href="#" data-plan="illimite">Choisir Illimité</a>
       </div>
     </div>
-    <p class="planfoot">Occasionnel ? <a href="#" data-plan="pack"><b>Pack 9 €</b></a> = 200 analyses valables 3 mois, sans abonnement · Paiement à l'année : <b>2 mois offerts</b>.</p>
+    <p class="planfoot rv">Occasionnel ? <a href="#" data-plan="pack"><b>Pack 9 €</b></a> = 200 analyses valables 3 mois, sans abonnement · Paiement à l'année : <b>2 mois offerts</b>.</p>
   </div>
 </section>
 
 <!-- FAQ -->
 <section id="faq" class="wrap">
-  <p class="kicker">FAQ</p>
-  <h2>Questions fréquentes</h2>
+  <p class="kicker rv">FAQ</p>
+  <h2 class="rv">Questions fréquentes</h2>
   <div style="max-width:760px">
-    <details open><summary>Immoscan remplace-t-il Nockee ?</summary><p>Non, c'est un complément. Nockee gère le document légal, la signature et l'envoi. Immoscan vous fait gagner du temps sur la partie descriptive : il rédige les observations que vous collez ensuite dans Nockee.</p></details>
-    <details><summary>Le descriptif est-il fiable ?</summary><p>C'est une suggestion générée par IA à partir de vos photos. Elle est conçue pour être neutre et précise, mais reste à vérifier et valider par le professionnel — vous gardez la main sur le texte final.</p></details>
-    <details><summary>Ça marche sans réseau dans le logement ?</summary><p>Oui. Vous prenez les photos hors-ligne, elles sont mises en file d'attente et analysées automatiquement dès que vous retrouvez internet.</p></details>
-    <details><summary>Puis-je résilier quand je veux ?</summary><p>Oui, les abonnements sont sans engagement et résiliables à tout moment. Vous gardez l'accès jusqu'à la fin de la période payée.</p></details>
-    <details><summary>Mes photos sont-elles conservées ?</summary><p>Les photos servent uniquement à générer le descriptif puis ne sont pas stockées sur nos serveurs. Le traitement passe par un serveur sécurisé qui ne conserve pas vos images.</p></details>
+    <details class="rv" open><summary>Immoscan remplace-t-il Nockee ?</summary><p>Non, c'est un complément. Nockee gère le document légal, la signature et l'envoi. Immoscan vous fait gagner du temps sur la partie descriptive : il rédige les observations que vous collez ensuite dans Nockee.</p></details>
+    <details class="rv"><summary>Le descriptif est-il fiable ?</summary><p>C'est une suggestion générée par IA à partir de vos photos. Elle est conçue pour être neutre et précise, mais reste à vérifier et valider par le professionnel — vous gardez la main sur le texte final.</p></details>
+    <details class="rv"><summary>Ça marche sans réseau dans le logement ?</summary><p>Oui. Vous prenez les photos hors-ligne, elles sont mises en file d'attente et analysées automatiquement dès que vous retrouvez internet.</p></details>
+    <details class="rv"><summary>Puis-je résilier quand je veux ?</summary><p>Oui, les abonnements sont sans engagement et résiliables à tout moment. Vous gardez l'accès jusqu'à la fin de la période payée.</p></details>
+    <details class="rv"><summary>Mes photos sont-elles conservées ?</summary><p>Les photos servent uniquement à générer le descriptif puis ne sont pas stockées sur nos serveurs. Le traitement passe par un serveur sécurisé qui ne conserve pas vos images.</p></details>
   </div>
 </section>
 
 <!-- CTA -->
 <section class="wrap">
-  <div class="band">
+  <div class="band rv">
     <h2>Testez sur votre prochain état des lieux</h2>
     <p>20 analyses offertes, sans carte. Vous verrez le temps gagné dès la première pièce.</p>
-    <a class="btn" href="pro.html">Démarrer gratuitement</a>
+    <a class="btn lg" href="pro.html"><svg class="ico"><use href="#i-bolt"/></svg> Démarrer gratuitement</a>
   </div>
 </section>
 
@@ -380,6 +500,19 @@
     const seq = [[0,2000],[1,600],[2,1700],[3,4200]];
     let i = 0;
     (function tick(){ const s = seq[i]; demo.setAttribute('data-step', s[0]); i=(i+1)%seq.length; setTimeout(tick, s[1]); })();
+  })();
+  // Apparition au défilement
+  (function(){
+    const els = document.querySelectorAll('.rv');
+    if(!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion:reduce)').matches){
+      els.forEach(e=>e.classList.add('in')); return;
+    }
+    const io = new IntersectionObserver((ents)=>{
+      ents.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+    },{rootMargin:'0px 0px -8% 0px',threshold:.12});
+    els.forEach(e=>io.observe(e));
+    // Filet de sécurité : rien ne doit rester caché si l'observateur échoue.
+    setTimeout(()=>els.forEach(e=>e.classList.add('in')), 2500);
   })();
   // Liens de paiement Stripe — colle ici les URLs de tes "Payment Links" Stripe.
   // Laisse vide ("") tant que ce n'est pas prêt : le bouton affichera un message.
