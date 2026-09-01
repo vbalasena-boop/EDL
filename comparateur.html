@@ -114,6 +114,32 @@
   .adrow{width:100%;border:1.5px dashed color-mix(in srgb,var(--accent) 40%,var(--line));background:transparent;color:var(--accent);
     border-radius:12px;padding:11px;font-size:14.5px;font-weight:800;cursor:pointer;margin-bottom:12px}
   .adrow:active{transform:scale(.99)}
+  /* Zone imprimable (export PDF) */
+  #printArea{display:none}
+  @media print{
+    @page{ margin:14mm; }
+    html,body{ background:#fff !important; color:#000 !important; }
+    .wrap>*:not(#printArea){ display:none !important; }
+    .overlay,.iconbtn{ display:none !important; }
+    #printArea{ display:block !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .pr-head{ display:flex; align-items:center; gap:12px; border-bottom:2px solid #7c3aed; padding-bottom:12px; margin-bottom:16px; }
+    .pr-head svg{ width:42px; height:42px; }
+    .pr-title{ font-size:20px; font-weight:800; color:#4f46e5; margin:0; }
+    .pr-sub{ font-size:12px; color:#444; margin:2px 0 0; }
+    .pr-meta{ font-size:12.5px; color:#333; margin:0 0 18px; }
+    .pr-meta b{ color:#000; }
+    .pr-h2{ font-size:14px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#4f46e5;
+      border-bottom:1px solid #ddd; padding-bottom:5px; margin:18px 0 10px; }
+    .pr-txt{ white-space:pre-wrap; font-size:12.5px; line-height:1.55; color:#111; margin:0; }
+    .pr-table{ width:100%; border-collapse:collapse; font-size:12px; }
+    .pr-table th,.pr-table td{ border:1px solid #ccc; padding:6px 8px; text-align:left; }
+    .pr-table th{ background:#f1eefe; color:#000; font-weight:800; }
+    .pr-table td.n,.pr-table th.n{ text-align:right; white-space:nowrap; }
+    .pr-total{ font-weight:800; }
+    .pr-total td{ background:#f1eefe; }
+    .pr-note{ font-size:10.5px; color:#555; margin-top:12px; line-height:1.4; }
+    .pr-foot{ margin-top:20px; padding-top:10px; border-top:1px solid #ddd; font-size:10.5px; color:#666; }
+  }
 </style>
 </head>
 <body>
@@ -179,7 +205,8 @@
     <p class="disclaimer">💡 Aide à la décision générée par IA — à vérifier et valider par le professionnel. Pensez à appliquer la grille de vétusté.</p>
     <div class="btnrow">
       <button class="btn sec small" id="copyBtn">📋 Copier</button>
-      <button class="btn small" id="againBtn">🔄 Nouvelle comparaison</button>
+      <button class="btn sec small" id="pdfBtn">🖨 PDF</button>
+      <button class="btn small" id="againBtn">🔄 Recommencer</button>
     </div>
   </div>
 
@@ -194,9 +221,12 @@
     </div>
     <div class="btnrow" style="margin-top:10px">
       <button class="btn sec small" id="copyVet">📋 Copier l'estimation</button>
+      <button class="btn small" id="pdfBtn2">🖨 Exporter le dossier (PDF)</button>
     </div>
     <p class="disclaimer" style="margin-top:12px">Estimation indicative — l'abattement pour vétusté et le montant retenu restent à la libre appréciation et sous la responsabilité du professionnel.</p>
   </div>
+
+  <div id="printArea"></div>
 
   <p class="footnote"><a href="pro.html">← Retour à l'app de scan</a> · <a href="legal.html">Mentions légales</a></p>
 </div>
@@ -448,6 +478,46 @@ function copyVet(e){
 }
 $('addRow').onclick=addVetRow;
 $('copyVet').onclick=copyVet;
+
+/* ---- Export PDF du dossier (via impression navigateur → « Enregistrer en PDF ») ---- */
+function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function buildReport(){
+  const logement=$('logement').value.trim();
+  const dateStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  const comp=($('result').textContent||'').trim();
+  const logo=`<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="pl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#4f46e5"/></linearGradient></defs><rect width="512" height="512" rx="116" fill="url(#pl)"/><polygon points="256,138 132,270 380,270" fill="#fff"/><rect x="186" y="258" width="140" height="140" rx="16" fill="#fff"/><rect x="236" y="326" width="50" height="72" rx="12" fill="url(#pl)"/><rect x="96" y="185" width="320" height="22" rx="11" fill="#efeafe"/><rect x="96" y="191" width="320" height="10" rx="5" fill="#fff"/></svg>`;
+  let html=`<div class="pr-head">${logo}<div><p class="pr-title">Comparatif entrée / sortie</p><p class="pr-sub">Immoscan — assistant d'état des lieux</p></div></div>`;
+  html+=`<p class="pr-meta">`+(logement?`<b>Logement :</b> ${esc(logement)}<br>`:``)+`<b>Date d'édition :</b> ${dateStr}</p>`;
+  html+=`<div class="pr-h2">Comparatif entrée / sortie</div>`;
+  html+= comp ? `<p class="pr-txt">${esc(comp)}</p>` : `<p class="pr-txt" style="color:#777">Comparaison non réalisée (aucun document analysé).</p>`;
+  // Tableau vétusté
+  const rows=[...document.querySelectorAll('#vetRows .vetrow')].filter(r=>{
+    return (+r.querySelector('.v-cost').value||0)>0;
+  });
+  if(rows.length){
+    html+=`<div class="pr-h2">Estimation vétusté — part locataire</div>`;
+    html+=`<table class="pr-table"><thead><tr><th>Élément</th><th class="n">Remise en état</th><th class="n">Âge</th><th class="n">Durée de vie</th><th class="n">Vétusté</th><th class="n">Part locataire</th></tr></thead><tbody>`;
+    rows.forEach(r=>{
+      const el=r.querySelector('.v-el'); const label=el.options[el.selectedIndex].text;
+      const cost=+r.querySelector('.v-cost').value||0, age=+r.querySelector('.v-age').value||0, d=+r.querySelector('.v-dur').value||0;
+      const pct=r.querySelector('.v-pct').textContent, part=r.querySelector('.v-part').textContent;
+      html+=`<tr><td>${esc(label)}</td><td class="n">${eur(cost)}</td><td class="n">${age} an(s)</td><td class="n">${d} ans</td><td class="n">${pct}</td><td class="n">${part}</td></tr>`;
+    });
+    html+=`<tr class="pr-total"><td colspan="5">Reste à charge locataire (estimation)</td><td class="n">${$('vetTotal').textContent}</td></tr>`;
+    html+=`</tbody></table>`;
+    html+=`<p class="pr-note">Grille de vétusté indicative : il n'existe pas de grille officielle en France. Les durées de vie sont des ordres de grandeur à adapter. L'abattement et le montant retenu relèvent de l'appréciation du professionnel.</p>`;
+  }
+  html+=`<p class="pr-foot">Document généré par Immoscan — aide à la décision assistée par IA, à vérifier et valider par le professionnel. Ce comparatif ne se substitue pas à un état des lieux contradictoire.</p>`;
+  return html;
+}
+function exportPDF(){
+  $('printArea').innerHTML=buildReport();
+  // laisse le DOM se peindre avant l'impression (utile sur mobile)
+  setTimeout(()=>window.print(), 60);
+}
+$('pdfBtn').onclick=exportPDF;
+$('pdfBtn2').onclick=exportPDF;
+
 addVetRow(); // une ligne au démarrage
 
 checkBanner();
