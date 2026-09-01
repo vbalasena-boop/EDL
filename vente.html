@@ -131,6 +131,56 @@
   .foot{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
   footer a{color:var(--muted);font-weight:700}
   footer a:hover{color:var(--text)}
+  /* Démo animée */
+  .demo{display:flex;justify-content:center;transform:rotate(.5deg)}
+  .phone{position:relative;width:270px;height:420px;border-radius:38px;background:#0c0b12;
+    padding:12px;box-shadow:var(--shadow-lg);border:1px solid rgba(255,255,255,.08)}
+  .notch{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:96px;height:20px;
+    background:#0c0b12;border-radius:0 0 14px 14px;z-index:3}
+  .screen{position:relative;height:100%;border-radius:28px;overflow:hidden;background:var(--card);
+    display:flex;flex-direction:column}
+  .dhead{flex:none;display:flex;align-items:center;gap:7px;padding:16px 16px 10px;font-size:12px;
+    font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .ddot{width:8px;height:8px;border-radius:50%;background:var(--grad)}
+  .stage{position:relative;flex:1;margin:0 12px 14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg2)}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;opacity:0;transition:opacity .4s ease;padding:16px;text-align:center}
+  /* Étape photo */
+  .room{width:100%;height:100%;border-radius:12px;position:absolute;inset:0;
+    background:linear-gradient(180deg,#efe9ff 0%,#efe9ff 62%,#e3dbf5 62%,#e3dbf5 100%)}
+  @media (prefers-color-scheme:dark){ .room{background:linear-gradient(180deg,#26223a 0%,#26223a 62%,#1c1830 62%,#1c1830 100%)} }
+  .win{position:absolute;top:22%;left:50%;transform:translateX(-50%);width:90px;height:66px;border-radius:6px;
+    background:linear-gradient(135deg,#cfe4ff,#eaf3ff);border:5px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+  .cam{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;
+    font-weight:800;font-size:13px;padding:10px 16px;border-radius:999px;white-space:nowrap;box-shadow:0 6px 16px rgba(124,58,237,.4)}
+  .flash{position:absolute;inset:0;background:#fff;opacity:0}
+  /* Étape analyse */
+  .sc-analyze span{font-weight:800;color:var(--accent2);font-size:14px}
+  .spinner2{width:38px;height:38px;border:4px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 0.8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  /* Étape résultat */
+  .sc-result{justify-content:flex-start;align-items:stretch;gap:9px;padding:16px 14px;text-align:left}
+  .rl{font-size:13px;line-height:1.4;color:var(--text);background:var(--card);border:1px solid var(--line);
+    border-radius:10px;padding:9px 11px;opacity:0;transform:translateY(6px)}
+  .rl .ok{color:var(--good)} .rl .wear{color:#d97706}
+  .copybar{margin-top:auto;font-size:12px;font-weight:800;color:#fff;background:var(--grad);border-radius:10px;
+    padding:9px;text-align:center;opacity:0}
+  /* Machine à états pilotée par data-step */
+  .demo[data-step="0"] .sc-photo{opacity:1}
+  .demo[data-step="0"] .cam{animation:tap 1.6s ease-in-out infinite}
+  @keyframes tap{0%,70%,100%{transform:translateX(-50%) scale(1)}82%{transform:translateX(-50%) scale(.9)}}
+  .demo[data-step="1"] .sc-photo{opacity:1}
+  .demo[data-step="1"] .flash{animation:fl .5s ease}
+  @keyframes fl{0%{opacity:.9}100%{opacity:0}}
+  .demo[data-step="2"] .sc-analyze{opacity:1}
+  .demo[data-step="3"] .sc-result{opacity:1}
+  .demo[data-step="3"] .rl{animation:rin .4s ease forwards}
+  .demo[data-step="3"] .rl:nth-child(1){animation-delay:.15s}
+  .demo[data-step="3"] .rl:nth-child(2){animation-delay:.6s}
+  .demo[data-step="3"] .rl:nth-child(3){animation-delay:1.05s}
+  .demo[data-step="3"] .copybar{animation:rin .4s ease 1.7s forwards}
+  @keyframes rin{to{opacity:1;transform:translateY(0)}}
+  @media (prefers-reduced-motion:reduce){ .spinner2,.cam,.rl,.copybar,.flash{animation:none!important} .rl,.copybar{opacity:1;transform:none} }
 </style>
 </head>
 <body>
@@ -171,13 +221,30 @@
       </div>
       <p class="note">Aucune carte bancaire pour l'essai · Fonctionne sur iPhone et Android · Hors-ligne géré</p>
     </div>
-    <div class="preview" aria-hidden="true">
-      <div class="top"><span class="dot"></span> Chambre · Aperçu du descriptif</div>
-      <pre><span class="k">Murs</span> (peinture) — État : <span class="st">Bon</span>
-<span class="k">Sol</span> (parquet stratifié) — État : <span class="st">État d'usage</span> — rayures légères devant la fenêtre
-<span class="k">Plafond</span> — État : <span class="st">Bon</span>
-<span class="k">Fenêtre</span> (PVC) — État : <span class="st">Bon</span>
-<span class="k">Radiateur</span> — État : <span class="st">État d'usage</span> — traces de poussière</pre>
+    <div class="demo" id="demo" data-step="0" aria-hidden="true">
+      <div class="phone">
+        <span class="notch"></span>
+        <div class="screen">
+          <div class="dhead"><span class="ddot"></span> Chambre · Murs</div>
+          <div class="stage">
+            <div class="scene sc-photo">
+              <div class="room"><span class="win"></span></div>
+              <div class="flash"></div>
+              <div class="cam">📷 Prendre la photo</div>
+            </div>
+            <div class="scene sc-analyze">
+              <div class="spinner2"></div>
+              <span>Analyse en cours…</span>
+            </div>
+            <div class="scene sc-result">
+              <div class="rl">Peinture — État : <b class="ok">Bon</b></div>
+              <div class="rl">Parquet — État : <b class="wear">État d'usage</b> — rayures près de la fenêtre</div>
+              <div class="rl">Plinthes — État : <b class="ok">Bon</b></div>
+              <div class="copybar">📋 Copié — à coller dans Nockee</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -306,6 +373,14 @@
 
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
+  // Démo animée en boucle : photo → déclic → analyse → résultat
+  (function(){
+    const demo = document.getElementById('demo');
+    if(!demo) return;
+    const seq = [[0,2000],[1,600],[2,1700],[3,4200]];
+    let i = 0;
+    (function tick(){ const s = seq[i]; demo.setAttribute('data-step', s[0]); i=(i+1)%seq.length; setTimeout(tick, s[1]); })();
+  })();
   // Liens de paiement Stripe — colle ici les URLs de tes "Payment Links" Stripe.
   // Laisse vide ("") tant que ce n'est pas prêt : le bouton affichera un message.
   const STRIPE_LINKS = {
