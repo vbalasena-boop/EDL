@@ -42,7 +42,7 @@
   .navlinks{display:flex;align-items:center;gap:22px}
   .navlinks a{color:var(--muted);font-weight:700;font-size:15px}
   .navlinks a:hover{color:var(--text)}
-  .btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;
+  .btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;white-space:nowrap;
     font-family:inherit;font-weight:800;font-size:16px;padding:14px 22px;border-radius:14px;color:#fff;overflow:hidden;
     background:var(--grad);box-shadow:0 6px 18px rgba(124,58,237,.30);transition:transform .14s,filter .14s,box-shadow .14s}
   .btn:hover{filter:brightness(1.05);transform:translateY(-2px);box-shadow:0 12px 26px rgba(124,58,237,.36)}
@@ -53,7 +53,14 @@
   .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:none}
   .btn.ghost:hover{box-shadow:none;background:color-mix(in srgb,var(--accent) 8%,transparent)}
   .btn.block{width:100%}
+  .nav .row{min-width:0}
+  .brand{min-width:0}
+  .brand span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .navlinks{flex:none}
+  .navbtn .mini{display:none}
   @media(max-width:760px){ .navlinks a.hide{display:none} }
+  @media(max-width:560px){ .navlinks{gap:12px} .navlinks a[href="#tarifs"]{display:none}
+    .navbtn .full{display:none} .navbtn .mini{display:inline} }
   /* Reveal on scroll */
   .rv{opacity:0;transform:translateY(18px);transition:opacity .6s cubic-bezier(.2,.7,.2,1),transform .6s cubic-bezier(.2,.7,.2,1)}
   .rv.in{opacity:1;transform:none}
@@ -267,7 +274,7 @@
       <a class="hide" href="#fonctionnalites">Fonctionnalités</a>
       <a class="hide" href="#etapes">Comment ça marche</a>
       <a href="#tarifs">Tarifs</a>
-      <a class="btn sm" href="pro.html">Essayer gratuitement</a>
+      <a class="btn sm navbtn" href="pro.html"><span class="full">Essayer gratuitement</span><span class="mini">Essayer</span></a>
     </nav>
   </div>
 </header>
