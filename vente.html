@@ -173,6 +173,23 @@
   .col.after li{color:var(--text)} .col.after li .ico{color:var(--good)}
   .arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:28px}
   @media(max-width:760px){ .arrow{transform:rotate(90deg);padding:2px 0} }
+  /* Comparateur entrée / sortie */
+  .cmpx{display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:center}
+  @media(max-width:860px){ .cmpx{grid-template-columns:1fr;gap:26px} }
+  .catlist{list-style:none;margin:18px 0 24px;padding:0;display:flex;flex-direction:column;gap:12px}
+  .catlist li{display:flex;gap:11px;align-items:flex-start;font-size:15px}
+  .tagpill{flex:none;font-size:11.5px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap;letter-spacing:.02em}
+  .t-bad{background:color-mix(in srgb,#dc2626 15%,transparent);color:#dc2626}
+  .t-wear{background:color-mix(in srgb,#d97706 16%,transparent);color:#b45309}
+  .t-old{background:var(--tint);color:var(--muted)}
+  .t-ok{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good)}
+  .cmpcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:16px;transform:rotate(-.4deg)}
+  .cmpcard .top{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:800;
+    text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+  .cmpcard .dot{width:9px;height:9px;border-radius:50%;background:var(--grad)}
+  .cmpline{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13.5px;line-height:1.4}
+  .cmpline b{font-weight:800}
+  .cmpline .st{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:5px}
   /* Steps */
   .steps{counter-reset:s}
   .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 22px;box-shadow:var(--shadow);position:relative;
@@ -255,6 +272,8 @@
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14l-3 3M5 7l3 3M5 7 2 13a3 3 0 0 0 6 0L5 7Zm14 0-3 6a3 3 0 0 0 6 0l-3-6Z"/></symbol>
+    <symbol id="i-docs" viewBox="0 0 24 24"><path d="M8 3h6l4 4v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v4h4M9 12h6M9 16h4"/></symbol>
   </defs>
 </svg>
 
@@ -374,6 +393,39 @@
         <li><svg class="ico"><use href="#i-check"/></svg> Défauts localisés (« rayures près de la fenêtre »)</li>
         <li><svg class="ico"><use href="#i-check"/></svg> Prêt à coller dans n'importe quel logiciel, format identique</li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARATEUR ENTRÉE / SORTIE -->
+<section class="wrap" style="padding-top:16px">
+  <div class="cmpx">
+    <div>
+      <p class="kicker rv"><svg class="ico" style="vertical-align:-2px"><use href="#i-scale"/></svg> Entrée · Sortie</p>
+      <h2 class="rv">Comparez l'entrée et la sortie, automatiquement</h2>
+      <p class="sub rv" style="margin-bottom:0">Déposez l'ancien état des lieux (photo du papier, scan ou PDF) et le nouveau. Immoscan les lit et repère ce qui a changé — et surtout ce qui est <b>imputable au locataire</b>.</p>
+      <ul class="catlist rv">
+        <li><span class="tagpill t-bad">DÉGRADATION</span> Nouveau défaut absent à l'entrée — imputable au locataire.</li>
+        <li><span class="tagpill t-wear">USURE / VÉTUSTÉ</span> Évolution normale liée à l'usage et au temps — non imputable.</li>
+        <li><span class="tagpill t-old">DÉJÀ PRÉSENT</span> Le défaut figurait déjà à l'entrée — non imputable.</li>
+        <li><span class="tagpill t-ok">IDENTIQUE</span> Aucun changement constaté.</li>
+      </ul>
+      <a class="btn rv" href="comparateur.html"><svg class="ico"><use href="#i-scale"/></svg> Ouvrir le comparateur</a>
+    </div>
+    <div class="cmpcard rv" aria-hidden="true">
+      <div class="top"><span class="dot"></span> Comparatif — Cuisine</div>
+      <div class="cmpline"><b>Murs</b> — peinture
+        <div class="st"><span>Entrée : Bon → Sortie : Mauvais</span><span class="tagpill t-bad">DÉGRADATION</span></div>
+      </div>
+      <div class="cmpline"><b>Sol</b> — carrelage
+        <div class="st"><span>Entrée : Bon → Sortie : État d'usage</span><span class="tagpill t-wear">USURE</span></div>
+      </div>
+      <div class="cmpline"><b>Plan de travail</b>
+        <div class="st"><span>Rayure déjà notée à l'entrée</span><span class="tagpill t-old">DÉJÀ PRÉSENT</span></div>
+      </div>
+      <div class="cmpline"><b>Fenêtre</b>
+        <div class="st"><span>Entrée : Bon → Sortie : Bon</span><span class="tagpill t-ok">IDENTIQUE</span></div>
+      </div>
     </div>
   </div>
 </section>
