@@ -60,15 +60,6 @@
   .iconbtn{background:var(--card);border:1px solid var(--line);border-radius:13px;width:44px;height:44px;flex:none;
     display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;color:var(--text);box-shadow:var(--shadow);transition:.12s}
   .iconbtn:active{transform:scale(.94)}
-  /* Bascule Entrée / Sortie */
-  .modebar{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin:0 2px 8px;box-shadow:var(--shadow)}
-  .modebtn{flex:1;border:none;background:transparent;color:var(--muted);font-family:inherit;font-weight:800;font-size:13.5px;
-    padding:9px 6px;border-radius:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.14s}
-  .modebtn.on{background:var(--grad);color:#fff;box-shadow:0 4px 12px rgba(124,58,237,.28)}
-  .modebtn:active{transform:scale(.97)}
-  .refhint{font-size:12.2px;color:var(--muted);margin:0 2px 8px;line-height:1.35;padding:8px 11px;border-radius:11px;
-    background:var(--card);border:1px solid var(--line)}
-  .refhint.ok{color:var(--accent-d);border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:var(--chipbg)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:8px;box-shadow:var(--shadow)}
   .label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--muted);
     text-transform:uppercase;letter-spacing:.05em;margin:0 0 7px}
@@ -217,11 +208,6 @@
   <div id="banner" class="msg info"></div>
   <div id="offline" class="msg info"></div>
 
-  <div class="modebar" id="modebar">
-    <button class="modebtn on" data-mode="in">📥 Entrée</button>
-    <button class="modebtn" data-mode="out">📤 Sortie</button>
-  </div>
-
   <div class="card">
     <p class="label"><span class="num">1</span> Pièce</p>
     <div class="chips" id="rooms"></div>
@@ -231,8 +217,6 @@
     <p class="label"><span class="num">2</span> Élément à décrire</p>
     <div class="chips" id="chips"></div>
   </div>
-
-  <div class="refhint" id="refHint"></div>
 
   <button class="btn" id="analyze" disabled>✨ &nbsp;Analyser</button>
   <button class="btn sec" id="queueAdd" style="margin-top:10px;display:none">🕓 &nbsp;Mettre en file (analyser plus tard)</button>
@@ -273,7 +257,7 @@
   </div>
 
   <div class="card" id="reportCard" style="display:none">
-    <p class="label">📋 <span id="reportTitle">Rapport</span> (<span id="reportCount">0</span>)</p>
+    <p class="label">📋 Rapport (<span id="reportCount">0</span>)</p>
     <div id="reportText"></div>
     <div class="btnrow">
       <button class="btn sec small" id="copyReport">📋 Copier le rapport</button>
@@ -281,7 +265,8 @@
     </div>
   </div>
 
-  <p class="footnote">Assistant de rédaction — le professionnel vérifie et valide.</p>
+  <p class="footnote">Assistant de rédaction — le professionnel vérifie et valide.<br>
+    <a href="comparateur.html" style="display:inline-block;margin-top:8px;font-size:14px">🔍 Comparateur entrée / sortie</a></p>
 </div>
 
 <div class="overlay" id="overlay">
@@ -299,16 +284,9 @@
         <option value="gemini-flash-latest">Meilleure qualité (plus lent)</option>
       </select>
     </div>
-    <div class="field">
-      <label>États d’entrée mémorisés (référence pour la sortie)</label>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;color:var(--muted)">
-        <span id="refCount">0 élément mémorisé</span>
-        <button class="btn danger small" id="resetRef" style="width:auto;padding:9px 14px">🗑 Réinitialiser</button>
-      </div>
-    </div>
     <button class="btn" id="saveSettings">Enregistrer</button>
     <button class="btn sec" id="closeSettings" style="margin-top:10px">Fermer</button>
-    <p class="footnote" style="margin-top:16px">Version <span id="ver"></span> · <a href="#" id="forceUpdate">↻ Forcer la mise à jour</a> · <a href="legal.html" target="_blank" rel="noopener">Mentions légales</a></p>
+    <p class="footnote" style="margin-top:16px">Version <span id="ver"></span> · <a href="#" id="forceUpdate">↻ Forcer la mise à jour</a> · <a href="comparateur.html">Comparateur E/S</a> · <a href="legal.html" target="_blank" rel="noopener">Mentions légales</a></p>
   </div>
 </div>
 
@@ -340,7 +318,7 @@
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
-const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', reportOut:'edlpro_report_out', mode:'edlpro_mode', ref:'edlpro_ref', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface', device:'edlpro_device' };
+const LS = { license:'edlpro_license', backend:'edlpro_backend', el:'edlpro_element', room:'edlpro_room', last:'edlpro_last', report:'edlpro_report', model:'edlpro_model', burst:'edlpro_burst', camface:'edlpro_camface', device:'edlpro_device' };
 function deviceId(){
   let d=localStorage.getItem(LS.device);
   if(!d){ d = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)); localStorage.setItem(LS.device,d); }
@@ -396,66 +374,15 @@ const ELEMENTS = [
 let selectedEl   = localStorage.getItem(LS.el)   || 'mur';
 let selectedRoom = localStorage.getItem(LS.room) || 'entree';
 let photos = [];
-let activeCtx = { room:selectedRoom, el:selectedEl }; // pièce/élément réellement analysés (pour mémoriser l'entrée)
-
-/* ---- Mode Entrée / Sortie ---- */
-function getMode(){ return localStorage.getItem(LS.mode)==='out' ? 'out' : 'in'; }
-function setMode(m){ localStorage.setItem(LS.mode, m==='out'?'out':'in'); renderModeBar(); renderReport(); updateRefHint(); }
-function renderModeBar(){ const m=getMode(); document.querySelectorAll('.modebtn').forEach(b=>b.classList.toggle('on', b.dataset.mode===m)); }
-
-/* ---- Mémoire des états d'entrée (référence pour la sortie) ---- */
-function getRefStore(){ try{ return JSON.parse(localStorage.getItem(LS.ref)||'{}'); }catch(e){ return {}; } }
-function refKey(room,el){ return room+'|'+el; }
-function getRef(room,el){ const v=getRefStore()[refKey(room,el)]; return (v && v.text) ? v.text : ''; }
-function labelFor(room,el){ const r=ROOMS.find(x=>x.id===room); const e=ELEMENTS.find(x=>x.id===el); return (r?r.label:'') + (e?' · '+e.label:''); }
-function rememberEntree(room,el,text){
-  const t=cleanText(text||'').trim(); if(!t) return;
-  const e=ELEMENTS.find(x=>x.id===el);
-  if(e && (e.keys || e.meter)) return; // clés & relevé de compteur : pas de comparaison
-  const store=getRefStore(); store[refKey(room,el)]={ label:labelFor(room,el), text:t, at:Date.now() };
-  try{ localStorage.setItem(LS.ref,JSON.stringify(store)); }catch(_){}
-  updateRefHint(); updateRefCount();
-}
-function refEntryCount(){ return Object.keys(getRefStore()).length; }
-function resetRef(){
-  if(refEntryCount() && !confirm('Effacer tous les états d’entrée mémorisés ? (à faire pour un nouveau locataire)')) return;
-  localStorage.removeItem(LS.ref); updateRefHint(); updateRefCount();
-}
-function updateRefCount(){ const s=$('refCount'); if(s){ const n=refEntryCount(); s.textContent=n+' élément'+(n>1?'s':'')+' mémorisé'+(n>1?'s':''); } }
-function updateRefHint(){
-  const h=$('refHint'); if(!h) return;
-  const e=ELEMENTS.find(x=>x.id===selectedEl)||{};
-  if(getMode()!=='out'){
-    h.className='refhint'; h.textContent='🧠 Mode Entrée : l’état analysé est mémorisé comme référence pour la sortie.'; h.style.display='block'; return;
-  }
-  if(e.keys || e.meter){ h.style.display='none'; return; }
-  if(getRef(selectedRoom,selectedEl)){ h.className='refhint ok'; h.textContent='🔎 Comparaison avec l’entrée activée pour cette sélection.'; }
-  else { h.className='refhint'; h.textContent='ℹ️ Aucun état d’entrée mémorisé ici : l’état de sortie sera décrit seul.'; }
-  h.style.display='block';
-}
 
 function currentLabel(){
   const r = ROOMS.find(x=>x.id===selectedRoom); const e = ELEMENTS.find(x=>x.id===selectedEl);
   return (r? r.label : '') + (e? ' · ' + e.label : '');
 }
-function comparePrompt(what, refText){
-  return `Tu es un expert en états des lieux. Voici l'état constaté À L'ENTRÉE du locataire pour ${what} :\n« ${refText} »\n\n`
-    + `Les photos montrent LE MÊME emplacement À LA SORTIE. Constate l'état de sortie et COMPARE-le à l'entrée. `
-    + `Distingue rigoureusement : (a) l'USURE NORMALE d'usage et la VÉTUSTÉ liées à l'occupation et au temps, NON imputables au locataire ; (b) les DÉGRADATIONS nouvelles imputables au locataire (trous, casse, brûlures, taches importantes, éléments manquants ou détériorés, saleté excessive). `
-    + `Une ligne par élément, format : « [Élément / matière] — Entrée : [état d'entrée] → Sortie : [état de sortie] », `
-    + `suivie sur la même ligne de la mention : « Constat : identique » si rien n'a changé, « Constat : usure normale / vétusté » si la différence relève de l'usage normal, ou « Constat : dégradation imputable — [brève description localisée] » si une nouvelle dégradation est visible. `
-    + `Reprends les mêmes éléments que la description d'entrée. Fonde-toi UNIQUEMENT sur les photos et sur la description d'entrée ; n'invente aucun défaut. `
-    + `Niveaux d'état : Très bon / Bon / État d'usage / Mauvais. N'utilise aucun émoji ni symbole décoratif. Pas d'introduction ni de conclusion. En français.`;
-}
-function buildPrompt(elId, roomId, opts){
+function buildPrompt(elId, roomId){
   const el = ELEMENTS.find(e => e.id === (elId||selectedEl)) || ELEMENTS[0];
   const room = ROOMS.find(r => r.id === (roomId||selectedRoom));
   const roomTxt = room ? ` (pièce : ${room.label})` : '';
-  opts = opts || {};
-  const mode = opts.mode || getMode();
-  const rId = roomId||selectedRoom, eId = elId||selectedEl;
-  const refText = ('refText' in opts) ? opts.refText : (mode==='out' ? getRef(rId,eId) : '');
-  const compare = (mode==='out') && !!refText && !el.keys && !el.meter;
   if(el.keys){
     return `Tu es un expert en états des lieux. Les photos montrent les CLÉS et moyens d'accès remis au locataire. Compte et liste chaque type distinct : clés (porte d'entrée, boîte aux lettres, cave, garage, boîte à clés…), badge(s) / Vigik, télécommande(s) de portail, bip(s). Une ligne par type, format : Type — Quantité : N. Recopie uniquement ce qui est visible, n'invente aucun objet ni quantité. N'utilise aucun émoji ni symbole décoratif. Pas d'introduction ni de conclusion. En français.`;
   }
@@ -463,11 +390,9 @@ function buildPrompt(elId, roomId, opts){
     return `Tu es un expert en états des lieux. Les photos montrent un ou plusieurs COMPTEURS (électricité, gaz, eau chaude ou eau froide), éventuellement en gros plan. Pour CHAQUE compteur visible, relève ces informations quand elles sont présentes sur la photo : (1) le TYPE de compteur ; (2) son NUMÉRO de matricule / numéro de série inscrit sur le compteur ; (3) pour l'ÉLECTRICITÉ, le PRM (aussi appelé PDL, un numéro à 14 chiffres, souvent affiché à l'écran d'un Linky après appui sur « + » ou sur une étiquette) ; pour le GAZ, le PCE s'il est visible ; (4) l'INDEX affiché (les chiffres du cadran ou de l'écran). Ne confonds pas le matricule (n° du compteur) et le PRM/PDL (n° du point de livraison, 14 chiffres). Pour un compteur électrique avec plusieurs index (Heures Pleines / Heures Creuses, ou Base), donne chaque index séparément avec son libellé. Une ligne par compteur, format : Compteur [type] — N° : [matricule] — PRM : [14 chiffres] (électricité) ou PCE : [numéro] (gaz) — Index : [valeur] [unité], avec l'unité kWh pour l'électricité et m³ pour le gaz et l'eau. N'affiche PRM/PCE que pour le type concerné. Recopie chiffres et numéros EXACTEMENT tels qu'ils apparaissent, sans arrondir ni compléter. Si une information est réellement illisible ou absente de la photo, écris [?] à sa place plutôt que de deviner ; n'invente jamais un numéro. N'affiche pas une information qui n'existe pas pour ce compteur. N'utilise aucun émoji ni symbole décoratif. Pas d'introduction ni de conclusion. En français.`;
   }
   if(el.inventory){
-    if(compare) return comparePrompt(`le mobilier et les équipements${roomTxt}`, refText);
     return `Tu es un expert en états des lieux de location meublée. Les photos montrent le mobilier et les équipements${roomTxt}, éventuellement sous plusieurs angles. Dresse l'INVENTAIRE : liste chaque meuble et équipement visible avec sa QUANTITÉ et son état. Une ligne par objet, au format : Objet (type/matière si utile) — Quantité : N — État : Mauvais / État d'usage / Bon / Très bon, suivi — seulement s'il y a un défaut — d'un tiret puis d'une courte description (usure, taches, casse…). Regroupe les objets identiques (ex : 4 chaises → une seule ligne, Quantité : 4). Ne liste PAS les murs, sols, plafonds ni plinthes. N'ajoute aucune mention de fonctionnement. N'utilise aucun émoji ni symbole décoratif. N'invente rien, pas d'introduction ni de conclusion. En français.`;
   }
   const cible = el.desc; const full = el.full === true;
-  if(compare) return comparePrompt(full ? `tous les éléments visibles de la pièce${roomTxt}` : `${cible}${roomTxt}`, refText);
   const intro = full
     ? `Tu es un expert en états des lieux immobiliers. Les photos montrent une pièce${roomTxt}, éventuellement sous plusieurs angles. Décris TOUS les éléments visibles (murs, sol, plafond, plinthes, portes, fenêtres, menuiseries, équipements, meubles fixes…), sans en omettre. `
     : `Tu es un expert en états des lieux immobiliers. Les photos montrent ${cible}${roomTxt}, éventuellement sous plusieurs angles. Décris UNIQUEMENT ${cible}, rien d'autre. `;
@@ -489,12 +414,12 @@ format +
 function renderRooms(){
   const c=$('rooms'); c.innerHTML='';
   ROOMS.forEach(r=>{ const b=document.createElement('button'); b.className='chip'+(r.id===selectedRoom?' on':'');
-    b.textContent=r.label; b.onclick=()=>{selectedRoom=r.id;localStorage.setItem(LS.room,r.id);renderRooms();updateRefHint();}; c.appendChild(b);});
+    b.textContent=r.label; b.onclick=()=>{selectedRoom=r.id;localStorage.setItem(LS.room,r.id);renderRooms();}; c.appendChild(b);});
 }
 function renderChips(){
   const c=$('chips'); c.innerHTML='';
   ELEMENTS.forEach(e=>{ const b=document.createElement('button'); b.className='chip'+(e.id===selectedEl?' on':'');
-    b.textContent=e.label; b.onclick=()=>{selectedEl=e.id;localStorage.setItem(LS.el,e.id);renderChips();updateRefHint();}; c.appendChild(b);});
+    b.textContent=e.label; b.onclick=()=>{selectedEl=e.id;localStorage.setItem(LS.el,e.id);renderChips();}; c.appendChild(b);});
 }
 function fileToJpegBase64(file,maxSize){
   return new Promise((resolve,reject)=>{ const url=URL.createObjectURL(file); const img=new Image();
@@ -562,7 +487,6 @@ function analyze(){
     showOffline('📴 Pas de réseau — tes photos sont gardées. L’analyse partira automatiquement dès le retour d’internet.');
     return;
   }
-  activeCtx={ room:selectedRoom, el:selectedEl };
   const parts=[{text:buildPrompt()}];
   photos.forEach(p=>parts.push({inline_data:{mime_type:'image/jpeg',data:p.b64}}));
   const el=ELEMENTS.find(e=>e.id===selectedEl);
@@ -606,8 +530,6 @@ async function loadQuota(){
 function showResult(text){
   $('result').textContent=cleanText(text); $('resultCard').style.display='block'; refreshClear();
   $('dockCopy').disabled=false;
-  if(getMode()==='in') rememberEntree(activeCtx.room, activeCtx.el, text); // mémorise l'état d'entrée
-  else updateRefHint();
   requestAnimationFrame(()=>{
     const y = $('resultCard').getBoundingClientRect().top + window.scrollY - 10;
     window.scrollTo({ top: y, behavior: 'smooth' });
@@ -617,11 +539,8 @@ async function copyText(txt,btn){
   try{ await navigator.clipboard.writeText(txt); const old=btn.innerHTML; btn.innerHTML='✅ Copié !'; setTimeout(()=>btn.innerHTML=old,1500);}
   catch(e){ showError('Copie impossible. Sélectionne le texte manuellement.'); }
 }
-function reportKeyFor(mode){ return mode==='out' ? LS.reportOut : LS.report; }
-function getReportFor(mode){ try{return JSON.parse(localStorage.getItem(reportKeyFor(mode))||'[]');}catch(e){return [];} }
-function saveReportFor(mode,a){ localStorage.setItem(reportKeyFor(mode),JSON.stringify(a)); renderReport(); }
-function getReport(){ return getReportFor(getMode()); }
-function saveReport(a){ saveReportFor(getMode(),a); }
+function getReport(){ try{return JSON.parse(localStorage.getItem(LS.report)||'[]');}catch(e){return [];} }
+function saveReport(a){ localStorage.setItem(LS.report,JSON.stringify(a)); renderReport(); }
 function addToReport(){
   const txt=$('result').textContent.trim(); if(!txt)return;
   const a=getReport(); a.push({t:currentLabel(),b:txt}); saveReport(a);
@@ -630,7 +549,7 @@ function addToReport(){
 const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{200D}]/gu;
 function cleanText(s){ return (s||'').replace(EMOJI_RE,'').replace(/[ \t]+/g,' ').replace(/ +\n/g,'\n').trim(); }
 function reportToText(a){ return a.map(e=>cleanText(e.t).toUpperCase()+'\n'+cleanText(e.b)).join('\n\n'); }
-function renderReport(){ const a=getReport(); const t=$('reportTitle'); if(t) t.textContent=(getMode()==='out'?'Rapport de sortie':'Rapport d’entrée'); $('reportCount').textContent=a.length; $('reportText').textContent=reportToText(a); $('reportCard').style.display=a.length?'block':'none'; }
+function renderReport(){ const a=getReport(); $('reportCount').textContent=a.length; $('reportText').textContent=reportToText(a); $('reportCard').style.display=a.length?'block':'none'; }
 function clearReport(){ if(getReport().length && !confirm('Vider tout le rapport ?'))return; saveReport([]); }
 function clearAll(){ photos=[]; renderThumbs(); $('result').textContent=''; $('resultCard').style.display='none'; $('dockCopy').disabled=true; localStorage.removeItem(LS.last); hideError(); refreshClear(); }
 /* ---- File d'attente hors ligne (IndexedDB) ---- */
@@ -645,10 +564,8 @@ function idbDel(id){ return idb().then(db=>new Promise((res,rej)=>{ const t=db.t
 let pendingQueue=false;
 async function addToQueue(){
   if(!photos.length) return;
-  const mode=getMode();
   const job={ id:Date.now()+'-'+Math.random().toString(36).slice(2,7), room:selectedRoom, element:selectedEl,
-    label:currentLabel(), mode, refText:(mode==='out'?getRef(selectedRoom,selectedEl):''),
-    photos:photos.map(p=>p.b64), createdAt:Date.now() };
+    label:currentLabel(), photos:photos.map(p=>p.b64), createdAt:Date.now() };
   try{ await idbPut(job); }catch(e){ showError('Impossible de sauvegarder (stockage plein ?).'); return; }
   photos=[]; renderThumbs(); refreshQueue();
 }
@@ -671,13 +588,11 @@ async function processQueue(btn){
   for(const job of jobs){
     i++; btn.innerHTML='<span class="spinner"></span> &nbsp;Analyse '+i+'/'+jobs.length+'…';
     try{
-      const jmode=job.mode||'in';
-      const parts=[{text:buildPrompt(job.element,job.room,{mode:jmode, refText:job.refText||''})}];
+      const parts=[{text:buildPrompt(job.element,job.room)}];
       job.photos.forEach(b=>parts.push({inline_data:{mime_type:'image/jpeg',data:b}}));
       const jel=ELEMENTS.find(e=>e.id===job.element);
       const text=await callGemini([{parts}], (jel && jel.meter) ? 'gemini-flash-latest' : null);
-      const a=getReportFor(jmode); a.push({t:job.label, b:text}); saveReportFor(jmode,a);
-      if(jmode==='in') rememberEntree(job.room, job.element, text);
+      const a=getReport(); a.push({t:job.label, b:text}); saveReport(a);
       await idbDel(job.id);
     }catch(err){ showError('Erreur sur « '+job.label+' » : '+err.message+' — elle reste dans la file.'); break; }
   }
@@ -689,7 +604,6 @@ function hideError(){ $('error').classList.remove('show'); }
 function openSettings(force){
   $('license').value=localStorage.getItem(LS.license)||'';
   $('model').value=currentModel();
-  updateRefCount();
   $('overlay').classList.add('show');
   if(force) showError('Colle d’abord ta clé d’accès dans ⚙️.');
 }
@@ -709,8 +623,6 @@ function checkBanner(){
 $('openSettings').onclick=()=>openSettings(false);
 $('closeSettings').onclick=closeSettings;
 $('saveSettings').onclick=saveSettings;
-$('resetRef').onclick=resetRef;
-document.querySelectorAll('.modebtn').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 $('overlay').onclick=e=>{ if(e.target===$('overlay'))closeSettings(); };
 // ---- Caméra intégrée (aperçu direct, rafale sans confirmation) ----
 let camStream=null, camShots=0;
@@ -815,7 +727,7 @@ $('toTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
 window.addEventListener('scroll',()=>{ $('toTop').classList.toggle('show', window.scrollY>280); }, {passive:true});
 window.addEventListener('online',updateOnline);
 window.addEventListener('offline',updateOnline);
-renderModeBar(); renderRooms(); renderChips(); updateRefHint(); renderReport(); refreshQueue(); checkBanner(); loadQuota(); updateOnline();
+renderRooms(); renderChips(); renderReport(); refreshQueue(); checkBanner(); loadQuota(); updateOnline();
 const last=localStorage.getItem(LS.last);
 if(last){ $('result').textContent=last; $('resultCard').style.display='block'; $('dockCopy').disabled=false; refreshClear(); }
 </script>

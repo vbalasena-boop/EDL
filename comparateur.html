@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7c3aed">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Comparateur entrée / sortie — Immoscan</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<style>
+  :root{
+    --bg:#f6f5fb; --bg2:#eceafe; --card:#ffffff; --text:#17161d; --muted:#6b6b7b;
+    --line:#e9e8f0; --accent:#7c3aed; --accent2:#4f46e5; --accent-d:#6d28d9;
+    --bad:#dc2626; --good:#16a34a; --warn:#d97706; --chipbg:#f3f0fe; --grad:linear-gradient(135deg,#7c3aed,#4f46e5);
+    --shadow:0 2px 8px rgba(60,40,120,.06),0 1px 2px rgba(60,40,120,.05);
+    --shadow-lg:0 12px 30px rgba(80,50,160,.14);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0f0e14; --bg2:#16131f; --card:#1a1922; --text:#f2f1f7; --muted:#9a99ac;
+      --line:#2a2836; --accent:#a78bfa; --accent2:#818cf8; --accent-d:#8b5cf6; --chipbg:#241f37;
+      --grad:linear-gradient(135deg,#8b5cf6,#6366f1);
+      --shadow:0 2px 10px rgba(0,0,0,.45); --shadow-lg:0 14px 34px rgba(0,0,0,.55); }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{color:var(--text);font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.45;min-height:100vh;
+    background:radial-gradient(1200px 600px at 100% -10%,var(--bg2),transparent 60%),
+      radial-gradient(900px 500px at -10% 0%,var(--bg2),transparent 55%),var(--bg);
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  .wrap{max-width:680px;margin:0 auto;padding:8px 16px 40px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 2px 10px}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .logo{width:46px;height:46px;flex:none;border-radius:14px;box-shadow:var(--shadow-lg);display:block}
+  .wordmark{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1;margin:0;
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .tag{font-size:12px;color:var(--muted);margin:3px 0 0;font-weight:600}
+  .iconbtn{background:var(--card);border:1px solid var(--line);border-radius:13px;width:44px;height:44px;flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;color:var(--text);box-shadow:var(--shadow);transition:.12s}
+  .iconbtn:active{transform:scale(.94)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.05em;margin:0 0 10px}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;
+    border-radius:7px;background:var(--grad);color:#fff;font-size:12.5px;font-weight:800;box-shadow:var(--shadow)}
+  .num.b{background:linear-gradient(135deg,#0ea5e9,#2563eb)}
+  .num.c{background:linear-gradient(135deg,#f59e0b,#d97706)}
+  .drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;
+    border:2px dashed color-mix(in srgb,var(--accent) 40%,var(--line));background:var(--chipbg);color:var(--accent);
+    border-radius:14px;padding:20px 14px;font-size:15.5px;font-weight:800;cursor:pointer;transition:.14s;text-align:center}
+  .drop:active{transform:scale(.99);filter:brightness(.97)}
+  .drop small{font-weight:600;color:var(--muted);font-size:12px}
+  .files{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+  .files:empty{display:none}
+  .fitem{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--bg2)}
+  .fitem img{width:100%;height:100%;object-fit:cover;display:block}
+  .fitem .pdf{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    color:var(--accent);font-size:11px;font-weight:800;text-align:center;padding:6px}
+  .fitem .pdf .big{font-size:24px}
+  .fitem button{position:absolute;top:3px;right:3px;width:23px;height:23px;border-radius:50%;border:none;
+    background:rgba(0,0,0,.62);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .count{font-size:12.5px;color:var(--muted);margin-top:10px;font-weight:600}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:7px}
+  .field input{width:100%;padding:13px;border:1.5px solid var(--line);border-radius:13px;font-size:16px;background:var(--bg);color:var(--text);-webkit-appearance:none}
+  .field input:focus{outline:none;border-color:var(--accent)}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;border-radius:14px;
+    padding:16px;font-size:16.5px;font-weight:800;cursor:pointer;color:#fff;background:var(--grad);
+    box-shadow:0 6px 18px rgba(124,58,237,.28);transition:.14s}
+  .btn:active{transform:translateY(1px);filter:brightness(.96)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+  .btn.sec{background:var(--card);color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:none}
+  .btn.small{padding:12px;font-size:14.5px;border-radius:12px}
+  .btnrow{display:flex;gap:9px;margin-top:5px}.btnrow .btn{flex:1}
+  #result{white-space:pre-wrap;font-size:15px;line-height:1.6;margin:0 0 12px}
+  .disclaimer{font-size:12.5px;color:var(--muted);margin:-2px 0 14px;line-height:1.45}
+  .msg{font-size:14px;padding:13px 15px;border-radius:14px;margin-bottom:12px;display:none;line-height:1.4}
+  .msg.show{display:block}
+  .msg.err{background:rgba(220,38,38,.1);color:var(--bad);border:1px solid rgba(220,38,38,.25)}
+  .msg.info{background:var(--chipbg);color:var(--accent-d);border:1px solid color-mix(in srgb,var(--accent) 20%,transparent)}
+  .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+    animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .footnote{text-align:center;font-size:12.5px;color:var(--muted);margin-top:14px}
+  .footnote a{color:var(--accent);font-weight:700}
+  .overlay{position:fixed;inset:0;background:rgba(20,12,40,.55);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center;z-index:10}
+  .overlay.show{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:680px;border-radius:24px 24px 0 0;padding:24px 20px calc(24px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);max-height:90vh;overflow:auto;box-shadow:var(--shadow-lg)}
+  .sheet h2{margin:0 0 4px;font-size:20px;font-weight:800}
+  .sheet p{margin:0 0 18px;font-size:13.5px;color:var(--muted)}
+  .sheet .field{margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="pro.html" style="text-decoration:none">
+      <svg class="logo" viewBox="0 0 512 512" role="img" aria-label="Immoscan">
+        <defs><linearGradient id="ig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#4f46e5"/></linearGradient></defs>
+        <rect width="512" height="512" rx="116" fill="url(#ig)"/>
+        <polygon points="256,138 132,270 380,270" fill="#fff"/>
+        <rect x="186" y="258" width="140" height="140" rx="16" fill="#fff"/>
+        <rect x="236" y="326" width="50" height="72" rx="12" fill="url(#ig)"/>
+        <rect x="96" y="185" width="320" height="22" rx="11" fill="#efeafe"/>
+        <rect x="96" y="191" width="320" height="10" rx="5" fill="#fff"/>
+      </svg>
+      <div>
+        <p class="wordmark">Comparateur E/S</p>
+        <p class="tag">Entrée vs sortie — analyse automatique</p>
+      </div>
+    </a>
+    <button class="iconbtn" id="openSettings" aria-label="Réglages">⚙️</button>
+  </header>
+
+  <div id="banner" class="msg info"></div>
+
+  <div class="card" style="background:var(--chipbg)">
+    <p style="margin:0;font-size:13.5px;color:var(--accent-d);line-height:1.5">
+      📄 Déposez l'<b>ancien</b> état des lieux (entrée) et le <b>nouveau</b> (sortie) — photos du papier, scans ou PDF.
+      L'IA les compare et repère ce qui est <b>déjà présent à l'entrée</b>, l'<b>usure normale</b> et les <b>dégradations imputables</b> au locataire.
+    </p>
+  </div>
+
+  <div class="card">
+    <p class="label"><span class="num b">1</span> État des lieux d'ENTRÉE (ancien)</p>
+    <label class="drop" for="inEntree">📎 Ajouter photos ou PDF<small>À l'arrivée du locataire</small></label>
+    <input type="file" id="inEntree" accept="image/*,application/pdf" multiple hidden>
+    <div class="files" id="filesEntree"></div>
+    <div class="count" id="countEntree"></div>
+  </div>
+
+  <div class="card">
+    <p class="label"><span class="num c">2</span> État des lieux de SORTIE (nouveau)</p>
+    <label class="drop" for="inSortie">📎 Ajouter photos ou PDF<small>Au départ du locataire</small></label>
+    <input type="file" id="inSortie" accept="image/*,application/pdf" multiple hidden>
+    <div class="files" id="filesSortie"></div>
+    <div class="count" id="countSortie"></div>
+  </div>
+
+  <div class="card">
+    <div class="field" style="margin:0">
+      <label>Logement (facultatif)</label>
+      <input type="text" id="logement" placeholder="Ex. : 12 rue des Lilas, appt 3" autocomplete="off">
+    </div>
+  </div>
+
+  <button class="btn" id="compareBtn" disabled>⚖️ &nbsp;Comparer les deux états</button>
+
+  <div class="msg err" id="error"></div>
+
+  <div class="card" id="resultCard" style="display:none;margin-top:10px">
+    <p class="label">📊 Comparatif</p>
+    <div id="result"></div>
+    <p class="disclaimer">💡 Aide à la décision générée par IA — à vérifier et valider par le professionnel. Pensez à appliquer la grille de vétusté.</p>
+    <div class="btnrow">
+      <button class="btn sec small" id="copyBtn">📋 Copier</button>
+      <button class="btn small" id="againBtn">🔄 Nouvelle comparaison</button>
+    </div>
+  </div>
+
+  <p class="footnote"><a href="pro.html">← Retour à l'app de scan</a> · <a href="legal.html">Mentions légales</a></p>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h2>Réglages</h2>
+    <p>Colle la clé d'accès reçue à ton achat (la même que dans l'app).</p>
+    <div class="field">
+      <label>Clé d'accès</label>
+      <input type="text" id="license" placeholder="IMS-XXXX-XXXX" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="btn" id="saveSettings">Enregistrer</button>
+    <button class="btn sec" id="closeSettings" style="margin-top:10px">Fermer</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const LS = { license:'edlpro_license', device:'edlpro_device' };
+const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
+const MODEL = 'gemini-flash-latest';               // meilleure qualité pour la comparaison
+const MAX_TOTAL_BYTES = 18 * 1024 * 1024;          // limite pratique (inline Gemini ~20 Mo)
+
+function deviceId(){
+  let d=localStorage.getItem(LS.device);
+  if(!d){ d=(self.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)); localStorage.setItem(LS.device,d); }
+  return d;
+}
+
+let entree = [];   // { mime, b64, url?, name, pdf }
+let sortie = [];
+
+function fileToJpegBase64(file,maxSize){
+  return new Promise((resolve,reject)=>{ const url=URL.createObjectURL(file); const img=new Image();
+    img.onload=()=>{ let {width:w,height:h}=img; if(Math.max(w,h)>maxSize){const r=maxSize/Math.max(w,h);w=Math.round(w*r);h=Math.round(h*r);}
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url); resolve(cv.toDataURL('image/jpeg',0.72).split(',')[1]); };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Image illisible'));}; img.src=url; });
+}
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{ const r=new FileReader();
+    r.onload=()=>resolve(String(r.result).split(',')[1]); r.onerror=()=>reject(new Error('Fichier illisible')); r.readAsDataURL(file); });
+}
+async function addFiles(list, arr, which){
+  const files=Array.from(list);
+  for(const f of files){
+    try{
+      if(f.type==='application/pdf'){
+        const b64=await fileToBase64(f);
+        arr.push({ mime:'application/pdf', b64, name:f.name||'document.pdf', pdf:true });
+      } else if(f.type && f.type.startsWith('image/')){
+        const b64=await fileToJpegBase64(f,1600);
+        arr.push({ mime:'image/jpeg', b64, url:'data:image/jpeg;base64,'+b64, name:f.name||'photo.jpg' });
+      }
+    }catch(e){}
+  }
+  render(which);
+}
+function render(which){
+  const arr = which==='entree'?entree:sortie;
+  const box = which==='entree'?$('filesEntree'):$('filesSortie');
+  const cnt = which==='entree'?$('countEntree'):$('countSortie');
+  box.innerHTML='';
+  arr.forEach((f,i)=>{
+    const d=document.createElement('div'); d.className='fitem';
+    if(f.pdf){ const p=document.createElement('div'); p.className='pdf'; p.innerHTML='<span class="big">📄</span><span>PDF</span>'; d.appendChild(p); }
+    else { const im=document.createElement('img'); im.src=f.url; im.alt=''; d.appendChild(im); }
+    const x=document.createElement('button'); x.textContent='×'; x.onclick=()=>{ arr.splice(i,1); render(which); };
+    d.appendChild(x); box.appendChild(d);
+  });
+  cnt.textContent = arr.length ? (arr.length+' document(s)') : '';
+  $('compareBtn').disabled = !(entree.length && sortie.length);
+}
+
+function backendURL(){ return BACKEND_URL.replace(/\/$/,''); }
+function totalBytes(){ return [...entree,...sortie].reduce((s,f)=>s+Math.ceil((f.b64||'').length*0.75),0); }
+
+function buildParts(){
+  const logement=$('logement').value.trim();
+  const HEAD = `Tu es un expert en états des lieux locatifs en France. On te fournit DEUX états des lieux du MÊME logement : `+
+    `d'abord l'ÉTAT DES LIEUX D'ENTRÉE (à l'arrivée du locataire), puis l'ÉTAT DES LIEUX DE SORTIE (à son départ). `+
+    `Ils peuvent être des photos, des documents scannés ou des PDF, éventuellement manuscrits.`+
+    (logement?` Logement concerné : ${logement}.`:``);
+  const TAIL = `Compare rigoureusement les deux états, pièce par pièce et élément par élément. `+
+    `Pour chaque différence, classe-la dans l'une de ces catégories : `+
+    `DÉGRADATION IMPUTABLE (défaut absent ou moindre à l'entrée et présent ou aggravé à la sortie, au-delà de l'usage normal) ; `+
+    `USURE NORMALE / VÉTUSTÉ (évolution liée à l'usage normal et au temps, non imputable) ; `+
+    `DÉJÀ PRÉSENT À L'ENTRÉE (le défaut figurait déjà dans l'état d'entrée, non imputable) ; `+
+    `IDENTIQUE (aucun changement). `+
+    `Présente le résultat en texte simple : un titre de pièce en MAJUSCULES, puis sous chaque pièce une ligne par élément concerné au format `+
+    `« Élément — Entrée : [état] / Sortie : [état] — [CATÉGORIE] — justification courte ». `+
+    `Termine par une section « A RETENIR — DEGRADATIONS IMPUTABLES » listant UNIQUEMENT les éléments classés DÉGRADATION IMPUTABLE, `+
+    `puis une phrase rappelant qu'un abattement pour vétusté doit éventuellement être appliqué selon la grille de vétusté en vigueur, `+
+    `et que ce comparatif est une aide à la décision à faire valider par le professionnel. `+
+    `Ne te fie qu'aux documents fournis. Si un élément n'apparaît que dans un seul des deux états, indique « non mentionné à l'entrée » `+
+    `ou « non mentionné à la sortie » et ne conclus pas à une dégradation. N'invente aucun défaut. N'utilise aucun émoji. Réponds en français.`;
+  const parts=[{text:HEAD}];
+  parts.push({text:'=== ÉTAT DES LIEUX D\'ENTRÉE (ancien) ==='});
+  entree.forEach(f=>parts.push({inline_data:{mime_type:f.mime,data:f.b64}}));
+  parts.push({text:'=== ÉTAT DES LIEUX DE SORTIE (nouveau) ==='});
+  sortie.forEach(f=>parts.push({inline_data:{mime_type:f.mime,data:f.b64}}));
+  parts.push({text:TAIL});
+  return parts;
+}
+
+async function compare(){
+  if(!(entree.length && sortie.length)) return;
+  const license=(localStorage.getItem(LS.license)||'').trim();
+  if(!license){ openSettings(true); return; }
+  if(totalBytes() > MAX_TOTAL_BYTES){
+    showError('Documents trop volumineux. Réduis le nombre de photos/pages (ou envoie les pages en PDF).'); return;
+  }
+  if(!navigator.onLine){ showError('📴 Pas de réseau — la comparaison a besoin d’internet.'); return; }
+  hideError();
+  const btn=$('compareBtn'); const old=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spinner"></span> &nbsp;Comparaison…';
+  try{
+    const res=await fetch(backendURL(),{ method:'POST',
+      headers:{'Content-Type':'application/json','X-License':license,'X-Device':deviceId()},
+      body:JSON.stringify({ model:MODEL, contents:[{parts:buildParts()}], generationConfig:{temperature:0.15,maxOutputTokens:4096} }) });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error || ('Erreur '+res.status));
+    const text=(data.text||'').trim();
+    if(!text) throw new Error('Réponse vide.');
+    $('result').textContent=text; $('resultCard').style.display='block';
+    requestAnimationFrame(()=>{ const y=$('resultCard').getBoundingClientRect().top+window.scrollY-10; window.scrollTo({top:y,behavior:'smooth'}); });
+  }catch(err){ showError('Échec : '+err.message); }
+  finally{ btn.innerHTML=old; btn.disabled=!(entree.length&&sortie.length); }
+}
+
+async function copyText(txt,btn){
+  try{ await navigator.clipboard.writeText(txt); const old=btn.innerHTML; btn.innerHTML='✅ Copié !'; setTimeout(()=>btn.innerHTML=old,1500); }
+  catch(e){ showError('Copie impossible. Sélectionne le texte manuellement.'); }
+}
+function resetAll(){
+  entree=[]; sortie=[]; render('entree'); render('sortie');
+  $('result').textContent=''; $('resultCard').style.display='none'; $('logement').value=''; hideError();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function showError(m){ const e=$('error'); e.textContent=m; e.classList.add('show'); }
+function hideError(){ $('error').classList.remove('show'); }
+
+function openSettings(force){ $('license').value=localStorage.getItem(LS.license)||''; $('overlay').classList.add('show'); if(force) showError('Colle d’abord ta clé d’accès dans ⚙️.'); }
+function closeSettings(){ $('overlay').classList.remove('show'); }
+function saveSettings(){ localStorage.setItem(LS.license,$('license').value.trim()); closeSettings(); hideError(); checkBanner(); }
+function checkBanner(){ const b=$('banner');
+  if(!(localStorage.getItem(LS.license)||'').trim()){ b.textContent='👋 Ouvre ⚙️ et colle ta clé d’accès (la même que dans l’app) pour commencer.'; b.classList.add('show'); }
+  else b.classList.remove('show'); }
+
+$('inEntree').onchange=async e=>{ await addFiles(e.target.files, entree, 'entree'); e.target.value=''; };
+$('inSortie').onchange=async e=>{ await addFiles(e.target.files, sortie, 'sortie'); e.target.value=''; };
+$('compareBtn').onclick=compare;
+$('copyBtn').onclick=e=>copyText($('result').textContent,e.currentTarget);
+$('againBtn').onclick=resetAll;
+$('openSettings').onclick=()=>openSettings(false);
+$('closeSettings').onclick=closeSettings;
+$('saveSettings').onclick=saveSettings;
+$('overlay').onclick=e=>{ if(e.target===$('overlay')) closeSettings(); };
+checkBanner();
+</script>
+</body>
+</html>
