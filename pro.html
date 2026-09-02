@@ -134,6 +134,16 @@
     header{margin:4px 2px 8px}
     .tag{display:none}
   }
+  .hint2{font-size:11.8px;color:var(--muted);margin-top:8px;line-height:1.35}
+  .arow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .arow:last-child{border-bottom:none}
+  .arow .an{min-width:0;flex:1}
+  .arow .an b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .arow .an span{color:var(--muted);font-size:12px}
+  .arow .ab{display:flex;gap:4px;flex:none}
+  .arow .ab button{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:9px;width:34px;height:34px;
+    font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .arow .ab button.del{color:var(--bad)}
   /* Barre d'actions flottante */
   #analyze{display:none}
   .dock{position:fixed;left:0;right:0;bottom:0;z-index:8;
@@ -260,10 +270,21 @@
   <div class="card" id="reportCard" style="display:none">
     <p class="label">📋 Rapport (<span id="reportCount">0</span>)</p>
     <div id="reportText"></div>
+    <div class="btnrow" style="margin-bottom:8px">
+      <button class="btn sec small" id="copyReport">📋 Copier</button>
+      <button class="btn sec small" id="shareReport">📤 Exporter</button>
+    </div>
     <div class="btnrow">
-      <button class="btn sec small" id="copyReport">📋 Copier le rapport</button>
+      <button class="btn small" id="archiveReport">🗂 Archiver</button>
       <button class="btn danger small" id="clearReport">🗑 Vider</button>
     </div>
+    <p class="hint2">💾 Le rapport est stocké sur ce téléphone. Pense à <b>Exporter</b> (mail, Drive, WhatsApp…) pour le sauvegarder ailleurs.</p>
+  </div>
+
+  <div class="card" id="archCard" style="display:none">
+    <p class="label">🗂 Archives (<span id="archCount">0</span>)</p>
+    <div id="archList"></div>
+    <p class="hint2">Rapports archivés sur ce téléphone : 📋 copier · 📤 exporter · ↩ restaurer · × supprimer.</p>
   </div>
 
   <p class="footnote">Assistant de rédaction — le professionnel vérifie et valide.<br>
@@ -287,7 +308,7 @@
     </div>
     <button class="btn" id="saveSettings">Enregistrer</button>
     <button class="btn sec" id="closeSettings" style="margin-top:10px">Fermer</button>
-    <p class="footnote" style="margin-top:16px">Version <span id="ver"></span> · <a href="#" id="forceUpdate">↻ Forcer la mise à jour</a> · <a href="comparateur.html">Comparateur E/S</a> · <a href="legal.html" target="_blank" rel="noopener">Mentions légales</a></p>
+    <p class="footnote" style="margin-top:16px">Version <span id="ver"></span> · <a href="#" id="forceUpdate">↻ Forcer la mise à jour</a> · <a href="comparateur.html">Comparateur E/S</a> · <a href="cgv.html" target="_blank" rel="noopener">CGV</a> · <a href="legal.html" target="_blank" rel="noopener">Mentions légales</a></p>
   </div>
 </div>
 
@@ -325,7 +346,7 @@ function deviceId(){
   if(!d){ d = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)); localStorage.setItem(LS.device,d); }
   return d;
 }
-const APP_VERSION = '6.1';
+const APP_VERSION = '6.2';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -551,13 +572,75 @@ const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B0
 function cleanText(s){ return (s||'').replace(EMOJI_RE,'').replace(/[ \t]+/g,' ').replace(/ +\n/g,'\n').trim(); }
 function reportToText(a){ return a.map(e=>cleanText(e.t).toUpperCase()+'\n'+cleanText(e.b)).join('\n\n'); }
 function renderReport(){ const a=getReport(); $('reportCount').textContent=a.length; $('reportText').textContent=reportToText(a); $('reportCard').style.display=a.length?'block':'none'; }
-function clearReport(){ if(getReport().length && !confirm('Vider tout le rapport ?'))return; saveReport([]); }
+/* ---- Sauvegarde : export / partage / archives (rien ne se perd) ---- */
+function fmtDate(ts){ const d=new Date(ts); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+function safeName(x){ return (x||'').replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim().slice(0,60); }
+function reportFileName(name){ return 'EDL-'+(safeName(name)||'rapport').replace(/\s+/g,'_')+'-'+new Date().toISOString().slice(0,10)+'.txt'; }
+async function shareText(txt,name){
+  if(!txt || !txt.trim()){ showError('Rien à exporter.'); return; }
+  const title='État des lieux — '+(name||'Immoscan'); const fname=reportFileName(name);
+  try{
+    const file=new File([txt],fname,{type:'text/plain'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({title,files:[file]}); return; }
+    if(navigator.share){ await navigator.share({title,text:txt}); return; }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  try{ // repli : téléchargement d'un fichier .txt
+    const blob=new Blob([txt],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }catch(e){ showError('Export impossible sur ce navigateur — utilise « Copier ».'); }
+}
+async function copyQuiet(txt,btn){ try{ await navigator.clipboard.writeText(txt); const o=btn.textContent; btn.textContent='✅'; setTimeout(()=>btn.textContent=o,1200); }catch(e){ showError('Copie impossible.'); } }
+async function archiveReport(auto){
+  const a=getReport(); if(!a.length) return false;
+  let name;
+  if(auto){ name='Sauvegarde auto'; }
+  else { name=prompt('Nom du rapport (ex. : 12 rue des Lilas, appt 3)', 'EDL du '+new Date().toLocaleDateString('fr-FR')); if(name===null) return false; }
+  name=safeName(name)||'Rapport';
+  const item={ id:Date.now()+'-'+Math.random().toString(36).slice(2,7), name, at:Date.now(), items:a };
+  try{ await archPut(item); }catch(e){ showError('Archivage impossible (stockage plein ?).'); return false; }
+  renderArchives();
+  if(!auto){ const b=$('archiveReport'); const old=b.innerHTML; b.innerHTML='✅ Archivé'; setTimeout(()=>b.innerHTML=old,1500); }
+  return true;
+}
+async function clearReport(){
+  const a=getReport(); if(!a.length) return;
+  if(!confirm('Vider le rapport ? Une copie sera gardée dans les Archives.')) return;
+  await archiveReport(true); // filet de sécurité : rien n'est perdu
+  saveReport([]);
+}
+async function renderArchives(){
+  let list=[]; try{ list=await archAll(); }catch(e){}
+  const cnt=$('archCount'), c=$('archList'); if(!cnt||!c) return;
+  cnt.textContent=list.length; c.innerHTML='';
+  list.forEach(it=>{
+    const d=document.createElement('div'); d.className='arow';
+    const an=document.createElement('div'); an.className='an';
+    const b=document.createElement('b'); b.textContent=it.name; const sp=document.createElement('span'); sp.textContent=fmtDate(it.at)+' · '+it.items.length+' élément(s)';
+    an.appendChild(b); an.appendChild(sp);
+    const ab=document.createElement('div'); ab.className='ab';
+    const mk=(txt,title,fn,cls)=>{ const x=document.createElement('button'); x.textContent=txt; x.title=title; x.setAttribute('aria-label',title); if(cls) x.className=cls; x.onclick=fn; ab.appendChild(x); };
+    mk('📋','Copier',e=>copyQuiet(reportToText(it.items),e.currentTarget));
+    mk('📤','Exporter / partager',()=>shareText(reportToText(it.items),it.name));
+    mk('↩','Restaurer dans le rapport en cours',async()=>{
+      if(getReport().length){ if(!confirm('Remplacer le rapport en cours ? (il sera archivé avant)')) return; await archiveReport(true); }
+      saveReport(it.items); window.scrollTo({top:$('reportCard').offsetTop-10,behavior:'smooth'}); });
+    mk('×','Supprimer',async()=>{ if(!confirm('Supprimer cette archive définitivement ?')) return; await archDel(it.id); renderArchives(); },'del');
+    d.appendChild(an); d.appendChild(ab); c.appendChild(d);
+  });
+  $('archCard').style.display=list.length?'block':'none';
+}
 function clearAll(){ photos=[]; renderThumbs(); $('result').textContent=''; $('resultCard').style.display='none'; $('dockCopy').disabled=true; localStorage.removeItem(LS.last); hideError(); refreshClear(); }
 /* ---- File d'attente hors ligne (IndexedDB) ---- */
-const IDB_DB='edlpro_db', IDB_STORE='jobs';
-function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open(IDB_DB,1);
-  r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains(IDB_STORE)) r.result.createObjectStore(IDB_STORE,{keyPath:'id'}); };
+const IDB_DB='edlpro_db', IDB_STORE='jobs', IDB_ARCH='archives';
+function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open(IDB_DB,2);
+  r.onupgradeneeded=()=>{ const d=r.result;
+    if(!d.objectStoreNames.contains(IDB_STORE)) d.createObjectStore(IDB_STORE,{keyPath:'id'});
+    if(!d.objectStoreNames.contains(IDB_ARCH))  d.createObjectStore(IDB_ARCH,{keyPath:'id'}); };
   r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+function archPut(a){ return idb().then(db=>new Promise((res,rej)=>{ const t=db.transaction(IDB_ARCH,'readwrite'); t.objectStore(IDB_ARCH).put(a); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); })); }
+function archAll(){ return idb().then(db=>new Promise((res,rej)=>{ const t=db.transaction(IDB_ARCH,'readonly'); const q=t.objectStore(IDB_ARCH).getAll(); q.onsuccess=()=>res((q.result||[]).sort((a,b)=>b.at-a.at)); q.onerror=()=>rej(q.error); })); }
+function archDel(id){ return idb().then(db=>new Promise((res,rej)=>{ const t=db.transaction(IDB_ARCH,'readwrite'); t.objectStore(IDB_ARCH).delete(id); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); })); }
 function idbPut(job){ return idb().then(db=>new Promise((res,rej)=>{ const t=db.transaction(IDB_STORE,'readwrite'); t.objectStore(IDB_STORE).put(job); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); })); }
 function idbAll(){ return idb().then(db=>new Promise((res,rej)=>{ const t=db.transaction(IDB_STORE,'readonly'); const q=t.objectStore(IDB_STORE).getAll(); q.onsuccess=()=>res((q.result||[]).sort((a,b)=>a.createdAt-b.createdAt)); q.onerror=()=>rej(q.error); })); }
 function idbDel(id){ return idb().then(db=>new Promise((res,rej)=>{ const t=db.transaction(IDB_STORE,'readwrite'); t.objectStore(IDB_STORE).delete(id); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); })); }
@@ -721,6 +804,8 @@ $('rfLong').onclick=e=>reformulate('detaille',e.currentTarget);
 $('rfAlt').onclick=e=>reformulate('reformule',e.currentTarget);
 $('copyReport').onclick=e=>copyText(reportToText(getReport()),e.currentTarget);
 $('clearReport').onclick=clearReport;
+$('shareReport').onclick=()=>shareText(reportToText(getReport()),'rapport');
+$('archiveReport').onclick=()=>archiveReport(false);
 $('ver').textContent=APP_VERSION;
 $('forceUpdate').onclick=e=>{ e.preventDefault(); location.replace(location.pathname+'?u='+Date.now()); };
 
@@ -728,7 +813,7 @@ $('toTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
 window.addEventListener('scroll',()=>{ $('toTop').classList.toggle('show', window.scrollY>280); }, {passive:true});
 window.addEventListener('online',updateOnline);
 window.addEventListener('offline',updateOnline);
-renderRooms(); renderChips(); renderReport(); refreshQueue(); checkBanner(); loadQuota(); updateOnline();
+renderRooms(); renderChips(); renderReport(); refreshQueue(); renderArchives(); checkBanner(); loadQuota(); updateOnline();
 const last=localStorage.getItem(LS.last);
 if(last){ $('result').textContent=last; $('resultCard').style.display='block'; $('dockCopy').disabled=false; refreshClear(); }
 </script>
