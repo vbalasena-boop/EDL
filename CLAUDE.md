@@ -58,6 +58,7 @@ Cible : gestion locative (gestionnaires, administrateurs de biens, agences). Ven
 - Vérifier le déploiement : GitHub MCP `actions_list` (workflow « pages build and deployment »).
 - Éditions : remplacements exacts avec vérification (python) ; screenshots avant/après pour tout changement d'UI ; tester mobile **et** desktop.
 - Commits en français, messages détaillés, **jamais** de nom de modèle dans les commits/PR.
+- **Context7** (MCP, `.mcp.json` du projet, transport HTTP) : à utiliser pour la doc à jour de Stripe, Cloudflare Workers/KV, API Gemini avant de toucher `backend/worker.js`. Inaccessible depuis le sandbox (réseau bloqué) mais fonctionne sur le poste du propriétaire. Clé API facultative (quotas plus élevés) : à ajouter en scope *user*, jamais dans le dépôt.
 
 ## Historique des versions app (repères)
 5.3 compteurs/miroir/cam au chaud · 6.0 lien comparateur · 6.1 bouton ⚖️ dans l'en-tête · 6.2 export/archives des rapports + CGV.
