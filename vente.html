@@ -92,6 +92,13 @@
   .hero3d.on canvas{display:block}
   .hero3d.on .demo{display:none}
   .hero3d.on .hero3d-hint{display:block}
+  .d3wrap{max-width:820px;margin:0 auto;text-align:center}
+  .d3wrap .hero3d{background:linear-gradient(180deg,color-mix(in srgb,var(--tint) 60%,transparent),transparent);
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .d3cap{color:var(--muted);font-size:15px;margin:12px 0 0}
+  .d3poster{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:100%;min-height:inherit;
+    color:var(--accent);font-weight:800;font-size:17px}
+  .hero3d.on .d3poster{display:none}
   @media(max-width:860px){ .hero3d{min-height:340px} .hero3d canvas{height:340px} }
   /* Démo animée */
   .demo{display:flex;justify-content:center;transform:rotate(.5deg)}
@@ -347,10 +354,7 @@
         <span><svg class="ico"><use href="#i-check"/></svg> Fonctionne hors-ligne</span>
       </div>
     </div>
-    <div class="hero3d" id="hero3d" aria-hidden="true">
-      <canvas id="hero3d-canvas"></canvas>
-      <span class="hero3d-hint">Glissez pour tourner</span>
-      <div class="demo" id="demo" data-step="0">
+    <div class="demo" id="demo" data-step="0" aria-hidden="true">
       <div class="phone">
         <span class="notch"></span>
         <div class="screen">
@@ -374,7 +378,6 @@
           </div>
         </div>
       </div>
-    </div>
     </div>
   </div>
 </div>
@@ -473,6 +476,18 @@
     <div class="step rv"><div class="n"></div><h3>Choisissez l'élément</h3><p>Pièce + élément (murs, sol, fenêtre…). Un mode « pièce entière » et un mode « inventaire » sont dispo.</p></div>
     <div class="step rv"><div class="n"></div><h3>Prenez les photos</h3><p>Caméra intégrée, en rafale. Plusieurs angles si besoin — Immoscan ne décrit pas deux fois le même élément.</p></div>
     <div class="step rv"><div class="n"></div><h3>Copiez-collez</h3><p>Le descriptif s'affiche, vous ajustez d'un tap si besoin, puis « Copier ». Collez dans votre logiciel d'état des lieux, quel qu'il soit.</p></div>
+  </div>
+</section>
+
+<!-- DÉCOR 3D (pièce réaliste, décoratif) -->
+<section class="wrap" style="padding-top:10px">
+  <div class="d3wrap rv">
+    <div class="hero3d" id="hero3d" aria-hidden="true">
+      <canvas id="hero3d-canvas"></canvas>
+      <span class="hero3d-hint">Glissez pour tourner</span>
+      <div class="d3poster"><svg class="ico" style="font-size:26px"><use href="#i-scale"/></svg> Aperçu 3D</div>
+    </div>
+    <p class="d3cap">Pensé pour le terrain — chaque pièce, chaque élément.</p>
   </div>
 </section>
 
