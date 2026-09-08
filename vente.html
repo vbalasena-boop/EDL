@@ -82,6 +82,17 @@
   .note{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:var(--muted);margin-top:18px}
   .note span{display:inline-flex;align-items:center;gap:6px}
   .note .ico{font-size:15px;color:var(--good)}
+  /* Hero 3D (diorama Three.js) */
+  .hero3d{position:relative;min-height:440px;display:flex;align-items:center;justify-content:center}
+  .hero3d canvas{display:none;width:100%;height:440px;outline:none;cursor:grab;touch-action:pan-y}
+  .hero3d.grab canvas{cursor:grabbing}
+  .hero3d .hero3d-hint{display:none;position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+    font-size:12px;font-weight:700;color:var(--muted);background:color-mix(in srgb,var(--card) 70%,transparent);
+    padding:5px 12px;border-radius:999px;border:1px solid var(--line);pointer-events:none}
+  .hero3d.on canvas{display:block}
+  .hero3d.on .demo{display:none}
+  .hero3d.on .hero3d-hint{display:block}
+  @media(max-width:860px){ .hero3d{min-height:340px} .hero3d canvas{height:340px} }
   /* Démo animée */
   .demo{display:flex;justify-content:center;transform:rotate(.5deg)}
   .phone{position:relative;width:270px;height:420px;border-radius:38px;background:#0c0b12;
@@ -336,7 +347,10 @@
         <span><svg class="ico"><use href="#i-check"/></svg> Fonctionne hors-ligne</span>
       </div>
     </div>
-    <div class="demo" id="demo" data-step="0" aria-hidden="true">
+    <div class="hero3d" id="hero3d" aria-hidden="true">
+      <canvas id="hero3d-canvas"></canvas>
+      <span class="hero3d-hint">Glissez pour tourner</span>
+      <div class="demo" id="demo" data-step="0">
       <div class="phone">
         <span class="notch"></span>
         <div class="screen">
@@ -360,6 +374,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </div>
@@ -611,5 +626,7 @@
     });
   });
 </script>
+<script src="vendor/three.min.js"></script>
+<script src="hero3d.js"></script>
 </body>
 </html>
