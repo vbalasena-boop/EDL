@@ -1,0 +1,120 @@
+# Veilleur : détecte une tâche en cours (BMAD ou RELAIS.md) sans push depuis 1 h (agent coupé,
+# quota épuisé…) et ouvre une issue assignée au fondateur (email + appli),
+# fermée d'elle-même dès que le travail reprend. Si le secret
+# CODEX_TRIGGER_TOKEN existe, il commente aussi « @codex prends la suite » au
+# nom du fondateur pour relancer Codex cloud (CAP-6). Il ne modifie jamais le code.
+name: Veilleur
+
+on:
+  schedule:
+    - cron: "17 * * * *" # toutes les heures
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: veilleur
+  cancel-in-progress: false
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Détecter un travail arrêté
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SEUIL_MINUTES: "60"
+          # Jeton GitHub fin du fondateur (ce dépôt, issues/PR) : facultatif.
+          # Présent → la mention @codex part en son nom et déclenche Codex cloud.
+          CODEX_TRIGGER_TOKEN: ${{ secrets.CODEX_TRIGGER_TOKEN }}
+        run: |
+          set -euo pipefail
+          STATUS=_bmad-output/implementation-artifacts/sprint-status.yaml
+          MODE=aucun
+          EN_COURS=""
+          if [ -f "$STATUS" ]; then
+            MODE=bmad
+            # Stories en cours (les epics « in-progress » ne comptent pas).
+            EN_COURS=$(grep -E '^\s+[^#[:space:]][^:]*: in-progress\s*$' "$STATUS" \
+              | grep -vE '^\s+epic-' | sed -E 's/^\s+([^:]+):.*/\1/' || true)
+          elif [ -f RELAIS.md ]; then
+            MODE=relais
+            # Tâches listées sous « ## En cours » de RELAIS.md.
+            EN_COURS=$(awk '/^## /{s=($0 ~ /^## En cours/)} s && /^- /' RELAIS.md || true)
+          fi
+
+          DERNIER=$(git log -1 --format=%ct)
+          MINUTES=$(( ( $(date +%s) - DERNIER ) / 60 ))
+          echo "Tâches en cours : ${EN_COURS:-aucune} — dernier push il y a ${MINUTES} min."
+
+          OUVERTE=$(gh issue list --label veilleur --state open --json number --jq '.[0].number // empty')
+
+          if [ -n "$EN_COURS" ] && [ "$MINUTES" -ge "$SEUIL_MINUTES" ]; then
+            if [ -z "$OUVERTE" ]; then
+              gh label create veilleur --color D93F0B \
+                --description "Alerte : travail arrêté" --force >/dev/null
+
+              # Story + chemin de sa fiche (nom de fiche = fin de la clé BMAD,
+              # ex. `relais-1-x` → `.../1-x.md`, `4-8-x` → `.../spec-4-8-x.md`).
+              LISTE=""
+              if [ "$MODE" = relais ]; then
+                LISTE="$EN_COURS"$'\n'"- fiche : \`RELAIS.md\` (section « Reprise »)"$'\n'
+              else
+              for CLE in $EN_COURS; do
+                FICHE=""
+                while IFS= read -r F; do
+                  BASE=$(basename "$F" .md); BASE=${BASE#spec-}
+                  if [[ "$CLE" == *"$BASE" ]]; then FICHE=$F; break; fi
+                done < <(git ls-files '_bmad-output/*.md')
+                LISTE+="- \`$CLE\` — fiche : \`${FICHE:-introuvable, chercher sous _bmad-output/}\`"$'\n'
+              done
+              fi
+              LISTE=${LISTE%$'\n'}
+
+              if [ -n "${CODEX_TRIGGER_TOKEN:-}" ]; then
+                SUITE="Codex est relancé automatiquement ci-dessous : rien à faire, ne relance pas Codex toi-même (un seul agent à la fois)."
+              else
+                SUITE="Claude est probablement à court de quota. Ouvre **chatgpt.com/codex** sur ce dépôt et écris : **prends la suite**."
+              fi
+              URL=$(gh issue create \
+                --title "⏸️ Travail arrêté depuis ${MINUTES} min" \
+                --label veilleur \
+                --assignee "${{ github.repository_owner }}" \
+                --body "$(printf '%s\n\n%s\n\n%s\n\n%s' \
+                  "Plus rien n'a été poussé depuis **${MINUTES} min** alors que ces tâches sont en cours :" \
+                  "$LISTE" "$SUITE" \
+                  "_Cette issue se fermera toute seule dès que le travail reprend._")")
+              echo "Alerte envoyée : $URL"
+
+              # Reprise automatique par Codex : une seule mention, à la création
+              # de l'alerte, au nom du fondateur. Échec → repli en mode alerte.
+              if [ -n "${CODEX_TRIGGER_TOKEN:-}" ]; then
+                if GH_TOKEN="$CODEX_TRIGGER_TOKEN" gh issue comment "${URL##*/}" \
+                  --body "$(printf '%s\n\n%s\n\n%s\n\n%s\n%s\n%s\n%s' \
+                    "@codex prends la suite." \
+                    "Claude s'est arrêté (aucun push depuis ${MINUTES} min). Tâches en cours :" \
+                    "$LISTE" \
+                    "1. Lis \`AGENTS.md\` et applique ses règles." \
+                    "2. Ouvre la fiche indiquée et reprends depuis sa section « Reprise »." \
+                    "3. Passe \`Agent : Codex\` dans la fiche." \
+                    "4. Livre le travail dans une pull request. Ne pousse jamais directement sur la branche par défaut (elle part en production).")"; then
+                  echo "Codex relancé."
+                else
+                  echo "::warning::Relance de Codex impossible (jeton CODEX_TRIGGER_TOKEN expiré ou droits insuffisants)."
+                  gh issue comment "${URL##*/}" --body "⚠️ La relance automatique de Codex a échoué (jeton à vérifier). Ouvre **chatgpt.com/codex** sur ce dépôt et écris : **prends la suite**."
+                fi
+              fi
+            else
+              echo "Alerte déjà ouverte (#$OUVERTE)."
+            fi
+          elif [ -n "$OUVERTE" ]; then
+            gh issue close "$OUVERTE" --comment "▶️ Le travail a repris (ou plus rien n'est en cours) : alerte levée."
+            echo "Alerte #$OUVERTE fermée."
+          else
+            echo "RAS."
+          fi
