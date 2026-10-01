@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(codex exec:*)",
+      "Bash(codex login:*)",
+      "Bash(git worktree:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/relais-session-start.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
