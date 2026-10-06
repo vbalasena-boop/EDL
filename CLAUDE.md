@@ -85,7 +85,7 @@ But du fondateur : avancer le plus longtemps possible en dépensant le moins pos
 | Outils réservés à Claude (Neon, Vercel, Stripe, Resend, navigateur), production, bug introuvable | Claude (sous-agent `opus` si complexe) |
 | Story rendue par l'autopilote (`Agent : claude`) | Claude |
 
-**Confier à Codex** : écrire ou compléter la fiche (`**Agent :** codex`, `**Niveau :**`, critères vérifiables, fichiers), `python3 scripts/relais/etat.py passer <clé> ready-for-dev`, pousser, puis `scripts/relais/lancer-autopilote.sh`. Ne pas attendre : répondre en une ligne ; le résultat arrive sur la branche et dans l'issue « 🛰️ Relais — tableau de bord ».
+**Confier à Codex** : écrire ou compléter la fiche (`**Agent :** codex`, `**Niveau :**`, `**Priorité :**`, critères vérifiables, fichiers, specs E2E à faire passer), `python3 scripts/relais/etat.py passer <clé> ready-for-dev`, pousser, puis `scripts/relais/lancer-autopilote.sh`. Ne pas attendre : répondre en une ligne ; le résultat arrive sur la branche et dans l'issue « 🛰️ Relais — tableau de bord ».
 Si le fondateur veut le résultat dans la session et que `codex login status` passe : worktree `<scratchpad>/wt-<clé>`, puis `codex exec --model <modèle de etat.py meta> --sandbox workspace-write -C <wt> "Claude te confie la story <clé> (fiche <chemin>). Ni commit ni push."` **avec `run_in_background`** ; attendre la notification sans rien faire, puis `scripts/relais/verifier.sh`, fusionner, pousser.
 
 **Quota Claude** : une ligne « Quota Claude : … » arrive dans le contexte quand il devient élevé (mesuré dans le terminal et l'app desktop ; pas en session cloud, où le fondateur dit « quota » s'il voit sa jauge haute).

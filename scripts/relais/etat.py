@@ -57,13 +57,18 @@ def champ(ligne, nom):
 
 def meta(cle):
     p = fiche(cle)
-    resultat = dict(agent='codex', niveau='complexe', statut=etats().get(cle, ''), fiche=str(p))
-    for ligne in p.read_text().splitlines()[:25]:
-        for nom in ('agent', 'niveau'):
+    resultat = dict(agent='codex', niveau='complexe', priorite='normale', statut=etats().get(cle, ''), fiche=str(p))
+    texte = p.read_text()
+    for ligne in texte.splitlines()[:25]:
+        for nom in ('agent', 'niveau', 'priorité', 'priorite'):
             match = champ(ligne, nom)
             if match:
-                resultat[nom] = match[2].strip(' *').lower()
+                resultat[nom.replace('é', 'e')] = match[2].strip(' *').lower()
     resultat['modele'] = MODELES.get(resultat['niveau'], MODELES['complexe'])
+    # Après un échec de l'autopilote, on monte au modèle le plus puissant avant de rendre la story à Claude.
+    resultat['echecs'] = str(len(re.findall(r'^- Autopilote : échec \d+', texte, re.M)))
+    if resultat['echecs'] != '0':
+        resultat['modele'] = MODELES['complexe']
     return resultat
 
 
@@ -97,8 +102,9 @@ def prochaine(pour='codex', seuil=60, max_echecs=2):
             date = run.stdout.strip()
             if date and time.time() - int(date) <= seuil * 60:
                 continue
-        candidats.append((priorite, cle))
-    return min(candidats, key=lambda x: x[0])[1] if candidats else ''
+        rang = {'haute': 0, 'normale': 1, 'basse': 2}.get(m.get('priorite', 'normale'), 1)
+        candidats.append((priorite, rang, len(candidats), cle))
+    return min(candidats)[3] if candidats else ''
 
 
 def epic():
@@ -201,7 +207,7 @@ def main():
             print(fiche(args.cle))
         elif args.cmd == 'meta':
             m = meta(args.cle)
-            for k in ('agent', 'niveau', 'modele', 'statut', 'fiche'):
+            for k in ('agent', 'niveau', 'priorite', 'echecs', 'modele', 'statut', 'fiche'):
                 print(f'{k}={m[k]}')
         elif args.cmd == 'passer':
             passer(args.cle, args.statut, args.agent)

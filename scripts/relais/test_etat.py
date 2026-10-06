@@ -112,6 +112,18 @@ class EtatTest(unittest.TestCase):
         os.utime(older, (1, 1))
         self.assertEqual(etat.quota(self.root)['cinq_heures'], 99)
 
+    def test_priorite_et_montee_en_modele(self):
+        self.status.write_text('development_status:\n  6-1: ready-for-dev\n  6-2: ready-for-dev\n  6-3: ready-for-dev\n')
+        self.fiche('6-1', '**Agent :** codex\n**Priorité :** basse')
+        self.fiche('6-2', '**Agent :** codex')
+        self.fiche('6-3', '**Agent :** codex\n**Priorité :** haute\n**Niveau :** simple')
+        self.assertEqual(etat.prochaine(), '6-3')
+        self.assertEqual(etat.meta('6-3')['modele'], 'gpt-5.5')
+        self.fiche('6-3', '**Agent :** codex\n**Niveau :** simple\n## Reprise\n- Autopilote : échec 1 (x)\n')
+        self.assertEqual(etat.meta('6-3')['modele'], 'gpt-6-astra')
+        self.assertEqual(etat.prochaine(), '6-2')
+        self.fiche('6-3', '**Agent :** codex\n**Priorité :** basse')
+        self.assertEqual(etat.prochaine(), '6-2')
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,11 +5,11 @@ Deux agents se relaient sur ce dépôt : **Claude** planifie, vérifie et utilis
 
 **État** : `python3 scripts/relais/etat.py statut` (stories ouvertes), `etat.py meta <clé>` (agent, niveau, modèle, fiche), `etat.py passer <clé> <statut> [--agent X]` pour écrire. Lire ensuite la fiche, puis les fichiers utiles par extraits. Pas d'exploration ni d'audit non demandés.
 
-**Fiche** `_bmad-output/implementation-artifacts/spec-<clé>.md` : en tête `**Agent :** codex|claude` et `**Niveau :** simple|moyen|complexe`, puis objectif, critères vérifiables, fichiers, section « Reprise » (fait / reste / prochaine commande, 3 lignes). Statuts : `ready-for-dev` → `in-progress` → `review` → `done`.
+**Fiche** `_bmad-output/implementation-artifacts/spec-<clé>.md` : en tête `**Agent :** codex|claude`, `**Niveau :** simple|moyen|complexe` et `**Priorité :** haute|normale|basse` (défaut normale), puis objectif, critères vérifiables, fichiers, section « Reprise » (fait / reste / prochaine commande, 3 lignes). Statuts : `ready-for-dev` → `in-progress` → `review` → `done`.
 
 **Un agent par story** : une story `in-progress` appartient à l'agent noté dans sa fiche (`claude`, `codex`, `autopilote`). N'y pas toucher tant que sa fiche a changé il y a moins d'1 h (2 h pour `autopilote`) ; au-delà elle est arrêtée : la reprendre. Les autres stories restent libres. Une story confiée explicitement (par Claude ou par l'autopilote) appartient à l'agent qui la reçoit, même si une autre story est en cours.
 
-**Autopilote** (toutes les 2 h, ou lancé par Claude ou par le hook de limite Claude) : prochaine story → Codex code puis se relit dans le même run → `scripts/relais/verifier.sh` (tests, lint, types). OK → push sur la branche par défaut et story suivante. Échec, ou fichier dans `CHEMINS_SENSIBLES` (`.relais/config`) → PR brouillon. Deux échecs → `Agent : claude`. Tableau de bord : issue « 🛰️ Relais — tableau de bord ».
+**Autopilote** (toutes les 2 h, ou lancé par Claude ou par le hook de limite Claude) : prochaine story → Codex code puis se relit dans le même run → `scripts/relais/verifier.sh` (tests, lint, types). OK → push sur la branche par défaut et story suivante. Échec, ou fichier dans `CHEMINS_SENSIBLES` (`.relais/config`) → PR brouillon. Après un échec, nouvel essai avec le modèle le plus puissant ; deux échecs → `Agent : claude`. Résumé quotidien à 18 h 47 sur le tableau de bord. Tableau de bord : issue « 🛰️ Relais — tableau de bord ».
 
 **Commandes du fondateur** :
 - « prends la suite » → Claude : autopilote pour les stories Codex, et prend lui-même les stories `claude` ; Codex : `etat.py prochaine`.

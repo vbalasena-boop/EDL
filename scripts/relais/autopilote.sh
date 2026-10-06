@@ -33,6 +33,19 @@ m=re.search(r'<!--\s*'+sys.argv[2]+r'=(\d+)\s*-->', items[0]['body'] if items el
 print(m[1] if m else 0)
 PY
 }
+apercu() {
+    # Lien de déploiement d'aperçu (Vercel publie un « deployment » GitHub par commit), 4 min max.
+    local sha=$1 id url
+    [[ "${GITHUB_ACTIONS:-}" == true ]] || return 0
+    for _ in $(seq 1 24); do
+        id=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$sha&per_page=1" --jq '.[0].id // empty' 2>/dev/null || true)
+        if [[ -n "$id" ]]; then
+            url=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses" --jq '[.[] | select(.state == "success")][0].environment_url // empty' 2>/dev/null || true)
+            [[ -z "$url" ]] || { echo "$url"; return 0; }
+        fi
+        sleep 10
+    done
+}
 default_branch() { gh repo view "$GITHUB_REPOSITORY" --json defaultBranchRef --jq .defaultBranchRef.name; }
 commit() {
     git add -A
@@ -74,6 +87,7 @@ case ${1:-} in
             else stop rien-a-faire; exit 0; fi
         else
             etat meta "$STORY" > "$RUNNER_TEMP/meta"
+            if grep -qx 'statut=done' "$RUNNER_TEMP/meta"; then stop deja-faite; exit 0; fi
             while IFS='=' read -r key value; do
                 case "$key" in statut) out statut_initial "$value" ;; agent) out agent_initial "$value" ;; fiche|modele) out "$key" "$value" ;; esac
             done < "$RUNNER_TEMP/meta"
@@ -105,7 +119,7 @@ case ${1:-} in
         case "$MODE" in
             implementer) prompt="L'autopilote te confie la story BMAD $STORY : elle t'appartient, le verrou « un agent par story » d'AGENTS.md ne s'applique pas à toi. Fiche : $FICHE. Implémente tous les critères d'acceptation, en respectant AGENTS.md. Lance les tests ciblés (unitaires). Ne lance pas les tests E2E Playwright : ton bac à sable n'a pas de navigateur, l'autopilote les lance après toi. Coche les critères faits et mets à jour la section Reprise de la fiche. Ne modifie pas sprint-status.yaml. Ni commit ni push." ;;
             revue) prompt="L'autopilote te confie la story BMAD $STORY : elle t'appartient, le verrou « un agent par story » d'AGENTS.md ne s'applique pas à toi. Relis le travail de la story $STORY (fiche $FICHE ; commits : git log --oneline --grep $STORY) contre ses critères d'acceptation. Corrige tout défaut ou critère manquant. Mets à jour la Reprise. Ni commit ni push. Si tout est bon, ne change rien au code." ;;
-            planifier) prompt="L'autopilote te confie la planification de l'epic $EPIC. Cet epic est validé mais n'a plus de story ouverte. À partir des documents de _bmad-output/planning-artifacts/ qui le concernent, écris jusqu'à 5 prochaines stories (≤ 1 h chacune), chacune dans _bmad-output/implementation-artifacts/spec-<clé>.md avec **Agent :** (codex, ou claude si elle exige base de données, migrations, sécurité, paiements ou outils de production), **Niveau :** (simple|moyen|complexe), objectif, critères d'acceptation vérifiables, fichiers concernés, section Reprise ; ajoute-les en ready-for-dev dans development_status, sous l'epic. Ne code rien. Ni commit ni push." ;;
+            planifier) prompt="L'autopilote te confie la planification de l'epic $EPIC. Cet epic est validé mais n'a plus de story ouverte. À partir des documents de _bmad-output/planning-artifacts/ qui le concernent, écris jusqu'à 5 prochaines stories (≤ 1 h chacune), chacune dans _bmad-output/implementation-artifacts/spec-<clé>.md avec **Agent :** (codex, ou claude si elle exige base de données, migrations, sécurité, paiements ou outils de production), **Niveau :** (simple|moyen|complexe), **Priorité :** (haute|normale|basse), objectif, critères d'acceptation vérifiables, fichiers concernés, section Reprise ; ajoute-les en ready-for-dev dans development_status, sous l'epic. Ne code rien. Si les documents montrent que tout l'epic est déjà livré, n'écris aucune story : passe $EPIC en done et $EPIC-retrospective en done dans development_status, et écris la rétrospective dans _bmad-output/implementation-artifacts/$EPIC-retro-$(date +%Y-%m-%d).md (livré, ce qui a coincé d'après les sections Reprise et les échecs de l'autopilote, PR encore ouvertes, 3 actions). Ni commit ni push." ;;
             *) exit 1 ;;
         esac
         if env -u CODEX_AUTH_JSON -u RELAIS_PAT -u GH_TOKEN -u GITHUB_TOKEN codex exec --json --model "$MODELE" --sandbox workspace-write -C "$GITHUB_WORKSPACE" "$prompt" > "$RUNNER_TEMP/codex.jsonl" 2> "$RUNNER_TEMP/codex.err"; then out codex_ok true; fi
@@ -184,7 +198,8 @@ PY2
         elif [[ ${SANS_PR:-false} != true ]] && env -u GH_TOKEN -u GITHUB_TOKEN scripts/relais/verifier.sh > "$RUNNER_TEMP/verifier.log" 2>&1; then verification=true; fi
         # Tests E2E des specs écrits ou modifiés par la story (les autres peuvent exiger la base de données).
         if [[ "$verification" == true && -x scripts/relais/e2e.sh ]]; then
-            mapfile -t specs < <({ git diff --name-only HEAD; git ls-files --others --exclude-standard; } | grep -E '^e2e/.*\.spec\.ts$' | sort -u)
+            # Specs modifiés par la story + specs cités dans sa fiche (critères d'acceptation).
+            mapfile -t specs < <({ git diff --name-only HEAD; git ls-files --others --exclude-standard; [[ -z "$FICHE" ]] || grep -oE 'e2e/[A-Za-z0-9._/-]+\.spec\.ts' "$FICHE"; } | grep -E '^e2e/.*\.spec\.ts$' | sort -u | while read -r f; do [[ -f "$f" ]] && echo "$f"; done)
             if (( ${#specs[@]} )); then
                 if env -u GH_TOKEN -u GITHUB_TOKEN scripts/relais/e2e.sh "${specs[@]}" >> "$RUNNER_TEMP/verifier.log" 2>&1; then echo "E2E OK : ${specs[*]}"
                 else verification=false; echo "E2E en échec : ${specs[*]}"; fi
@@ -216,8 +231,9 @@ PY2
             git push -u origin "$branche"
             { printf 'Raison : %s\n\nDernières lignes du contrôle :\n```text\n' "$raison"; tail -n 40 "$RUNNER_TEMP/verifier.log"; printf '\n```\n'; } > "$RUNNER_TEMP/pr.md"
             url_pr=$(gh pr create --repo "$GITHUB_REPOSITORY" --draft --base "$branche_defaut" --head "$branche" --title "Autopilote : ${STORY:-$EPIC} à vérifier" --body-file "$RUNNER_TEMP/pr.md") \
-                || url_pr="branche $branche (PR impossible : cocher « Allow GitHub Actions to create and approve pull requests » dans Settings → Actions → General)"
-            echo "- PR brouillon à valider (${STORY:-$EPIC}, $raison) : $url_pr" >> "$RUNNER_TEMP/notifs"
+                || url_pr="ouvrir la PR en un clic : https://github.com/$GITHUB_REPOSITORY/compare/$branche_defaut...$branche?expand=1"
+            lien=$(apercu "$(git rev-parse HEAD)")
+            echo "- PR brouillon à valider (${STORY:-$EPIC}, $raison) : $url_pr${lien:+ · à tester sur ton téléphone : $lien}" >> "$RUNNER_TEMP/notifs"
             git switch "$branche_defaut"
             fi
             if [[ -n "$STORY" ]]; then
@@ -280,6 +296,22 @@ PY
             GH_TOKEN="$GITHUB_TOKEN" gh workflow run autopilote.yml --ref "$(default_branch)" -f declencheur=chaine -f "pour=$POUR" -f "profondeur=$((PROFONDEUR+1))"
         fi
         ;;
+    resume)
+        board
+        faites=$(git log --since='24 hours ago' --format=%s | sed -nE 's/^Autopilote : ([^ ]+) (implémentée et relue|implémentée|relue|planifiée) \(.*/- \1 (\2)/p' | sort -u)
+        prs=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --search 'Autopilote in:title' --json number,title,url --jq '.[] | "- #\(.number) \(.title) : \(.url)"')
+        quota=$(python3 -c 'import json,sys; b=(json.load(open(sys.argv[1])) or [{}])[0].get("body",""); print("\n".join(l for l in b.splitlines() if l.startswith("Quota")))' "$RUNNER_TEMP/tableau.json")
+        numero=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d[0]["number"] if d else "")' "$RUNNER_TEMP/tableau.json")
+        [[ -n "$numero" ]] || { echo "Pas de tableau de bord"; exit 0; }
+        {
+            echo "@${GITHUB_REPOSITORY_OWNER:-${GITHUB_REPOSITORY%%/*}} résumé des dernières 24 h"
+            echo; echo "**Terminé :**"; echo "${faites:-- rien}"
+            echo; echo "**PR à valider :**"; echo "${prs:-- aucune}"
+            echo; echo "**File d'attente :**"; etat statut | sed 's/^/- /'; echo
+            echo "${quota:-Quota Codex : inconnu}"
+        } > "$RUNNER_TEMP/resume.md"
+        gh issue comment "$numero" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/resume.md"
+        ;;
     boucle)
         # Plusieurs stories dans le même run : évite un démarrage complet de la CI par story.
         debut=$(date +%s); n=0
@@ -291,10 +323,11 @@ PY
             (( n < ${MAX_PAR_RUN:-6} && $(date +%s) - debut < ${BUDGET_RUN_MINUTES:-150} * 60 )) || break
             git pull --no-rebase -q || break
             grep -E '^export (CINQ_HEURES|SEMAINE|RESET_CINQ|RESET_SEMAINE|ALERTE_AUTH)=' "$state" > "$RUNNER_TEMP/garde" || true
+            : > "$state"   # sinon le décideur relirait la story qu'on vient de finir
             DECLENCHEUR=chaine STORY='' "$0" decider > /dev/null
             cat "$RUNNER_TEMP/garde" >> "$state"; source "$state"
             [[ "$GO" == true ]] || { out go true; out raison fin-de-file; break; }
         done
         ;;
-    *) echo 'Usage : autopilote.sh decider|boucle|marquer|codex|sauver-auth|publier|tableau|enchainer' >&2; exit 2 ;;
+    *) echo 'Usage : autopilote.sh decider|resume|boucle|marquer|codex|sauver-auth|publier|tableau|enchainer' >&2; exit 2 ;;
 esac

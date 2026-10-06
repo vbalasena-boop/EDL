@@ -21,6 +21,7 @@ permissions:
   issues: write
   pull-requests: write
   actions: write
+  deployments: read
 concurrency:
   group: relais-codex
   cancel-in-progress: false
