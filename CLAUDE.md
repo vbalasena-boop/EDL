@@ -72,13 +72,32 @@ Cible : gestion locative (gestionnaires, administrateurs de biens, agences). Ven
 4. Ensuite seulement : générateur d'annonces (cible agents), etc.
 
 <!-- relais:debut -->
-# Boucle Codex (consignes pour Claude uniquement)
+# Aiguillage Claude ↔ Codex (consignes pour Claude)
 
-Le fondateur a validé : Codex travaille d'abord (abonnement ChatGPT), Claude prend le relais quand Codex est à court, un seul agent à la fois.
+But du fondateur : avancer le plus longtemps possible en dépensant le moins possible de quota Claude. **Claude planifie, aiguille et vérifie ; Codex code.** Décider seul, annoncer le choix en 3 mots (« → Codex : page UI »).
 
-- **Démarrage** : au premier message de la session, s'il existe des tâches prêtes ou en cours (BMAD : `grep -E ': (ready-for-dev|in-progress)$' _bmad-output/implementation-artifacts/sprint-status.yaml | grep -v 'epic-'` ; sinon sections « À faire » / « En cours » de `RELAIS.md`), lancer la boucle : skill `loop` sans intervalle avec le prompt « prends la suite ». Respecter d'abord les verrous d'`AGENTS.md`.
-- **Chaque tour** : une seule tâche. Tâche de zone Codex et `codex login status` OK → `git worktree add <scratchpad>/wt-<id> -b codex/<id>`, puis au premier plan `codex exec --sandbox workspace-write -C <worktree> "<tâche + fichiers + critères>. Respecte AGENTS.md. Ni commit ni push."` ; Claude attend sans rien modifier. Sortie signalant limite d'usage ou authentification → Claude fait la tâche. Puis relire le diff, tests/lint/build du projet, fusionner, pousser, état à jour, tour suivant. Plus rien de prêt → arrêter la boucle et le dire en une ligne.
-- **Connexion Codex** (si `codex login status` échoue et qu'une tâche Codex arrive) : lancer en arrière-plan `codex login --device-auth > <scratchpad>/codex-login.log 2>&1`, donner au fondateur le lien et le code (15 min), puis vérifier `codex login status`.
-- **Économie** : une ligne par tâche terminée, rien entre deux tours.
-- **Annonce modèle** : à la fin de chaque tâche, indiquer en une ligne : `Modèle utilisé : <Haiku / Sonnet / Opus> — <raison en 3 mots>`.
+| Demande | Qui |
+|---|---|
+| Question, conseil, statut, correction de quelques lignes | Claude, directement |
+| Recherche dans le code | sous-agent `haiku` |
+| Code à écrire : page, composant, style, fonctionnalité, tests, refactor | Codex |
+| Base de données, migrations, sécurité, paiements | Codex (`Niveau : complexe`), puis Claude relit la PR |
+| Outils réservés à Claude (Neon, Vercel, Stripe, Resend, navigateur), production, bug introuvable | Claude (sous-agent `opus` si complexe) |
+| Story rendue par l'autopilote (`Agent : claude`) | Claude |
+
+**Confier à Codex** : écrire ou compléter la fiche (`**Agent :** codex`, `**Niveau :**`, critères vérifiables, fichiers), `python3 scripts/relais/etat.py passer <clé> ready-for-dev`, pousser, puis `scripts/relais/lancer-autopilote.sh`. Ne pas attendre : répondre en une ligne ; le résultat arrive sur la branche et dans l'issue « 🛰️ Relais — tableau de bord ».
+Si le fondateur veut le résultat dans la session et que `codex login status` passe : worktree `<scratchpad>/wt-<clé>`, puis `codex exec --model <modèle de etat.py meta> --sandbox workspace-write -C <wt> "Claude te confie la story <clé> (fiche <chemin>). Ni commit ni push."` **avec `run_in_background`** ; attendre la notification sans rien faire, puis `scripts/relais/verifier.sh`, fusionner, pousser.
+
+**Quota Claude** : une ligne « Quota Claude : … » arrive dans le contexte quand il devient élevé (mesuré dans le terminal et l'app desktop ; pas en session cloud, où le fondateur dit « quota » s'il voit sa jauge haute).
+- **Mode économe** (≥ 70 % sur 5 h ou ≥ 80 % sur la semaine) : Claude n'écrit plus de code ; seulement fiches + autopilote ; réponses d'une ligne ; aucun sous-agent sauf `haiku`.
+- **Relais** (≥ 90 %, ou le fondateur dit « relais » ou « quota ») : point de reprise, push, `scripts/relais/lancer-autopilote.sh relais tous`, une ligne, arrêt.
+- **Limite atteinte** : le hook `StopFailure` sauvegarde le travail non commité (branche `claude/wip-*`) et lance l'autopilote ; à défaut, l'autopilote planifié prend la main après 45 min sans commit de Claude.
+
+**Économie permanente** :
+- Conversation en Sonnet (défaut du dépôt) ; `/model opus` seulement pour une décision d'architecture, puis revenir.
+- Pas de `/loop` Claude pour des stories Codex : c'est l'autopilote qui enchaîne, sans coût pour le quota Claude. Boucle Claude seulement pour des stories `Agent : claude`.
+- État par `etat.py statut` (jamais le YAML entier), fichiers par extraits, pas de récapitulatif.
+- Fin de tâche : une ligne `Modèle : <…> — <raison>`.
+
+**Connexion Codex locale** (si `codex login status` échoue et qu'un `codex exec` en session est utile) : `codex login --device-auth > <scratchpad>/codex-login.log 2>&1` en arrière-plan, donner au fondateur le lien et le code (valables 15 min) ; en attendant, passer par l'autopilote.
 <!-- relais:fin -->

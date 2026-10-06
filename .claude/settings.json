@@ -3,7 +3,14 @@
     "allow": [
       "Bash(codex exec:*)",
       "Bash(codex login:*)",
-      "Bash(git worktree:*)"
+      "Bash(git worktree:*)",
+      "Bash(python3 scripts/relais/etat.py:*)",
+      "Bash(scripts/relais/verifier.sh:*)",
+      "Bash(scripts/relais/lancer-autopilote.sh:*)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   },
   "hooks": {
@@ -16,6 +23,35 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/relais-quota.sh"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "matcher": "rate_limit|billing_error",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/relais-limite.sh"
+          }
+        ]
+      }
     ]
+  },
+  "model": "sonnet",
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "\"${CLAUDE_PROJECT_DIR:-.}\"/.claude/hooks/relais-statusline.sh"
   }
 }
