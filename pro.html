@@ -57,6 +57,16 @@
     border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);
     padding:7px 12px;border-radius:999px;white-space:nowrap;line-height:1}
   .qchip:empty{display:none}
+  .qchip.low{color:#b45309;background:color-mix(in srgb,#f59e0b 16%,transparent);border-color:color-mix(in srgb,#f59e0b 48%,transparent)}
+  .msg.warn{background:color-mix(in srgb,#f59e0b 12%,transparent);color:#b45309;border:1px solid color-mix(in srgb,#f59e0b 40%,transparent)}
+  .msg.warn a{color:#b45309;font-weight:800;text-decoration:underline}
+  @media (prefers-color-scheme:dark){ .msg.warn,.msg.warn a{color:#fbbf24} }
+  @media (prefers-color-scheme:dark){ .qchip.low{color:#fbbf24} }
+  :focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:2px}
+  .btn,.chip,.iconbtn,.dockbtn{transition:transform .12s ease,box-shadow .15s ease,background .15s ease,color .15s ease,filter .12s ease}
+  @keyframes resIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  #resultCard.in{animation:resIn .3s ease both}
+  @media (prefers-reduced-motion:reduce){ *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important} }
   .iconbtn{background:var(--card);border:1px solid var(--line);border-radius:13px;width:44px;height:44px;flex:none;
     display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;color:var(--text);box-shadow:var(--shadow);transition:.12s}
   .iconbtn:active{transform:scale(.94)}
@@ -210,7 +220,7 @@
       </div>
     </div>
     <div class="headright">
-      <span class="qchip" id="quota" title="Analyses restantes"></span>
+      <span class="qchip" id="quota" title="Analyses restantes" aria-live="polite" aria-label="Analyses restantes"></span>
       <a class="iconbtn" href="comparateur.html" title="Comparateur entrée / sortie" aria-label="Comparateur entrée / sortie" style="text-decoration:none">⚖️</a>
       <button class="iconbtn" id="openSettings" aria-label="Réglages">⚙️</button>
     </div>
@@ -218,15 +228,16 @@
 
   <div id="banner" class="msg info"></div>
   <div id="offline" class="msg info"></div>
+  <div id="lowq" class="msg warn" role="status"></div>
 
   <div class="card">
     <p class="label"><span class="num">1</span> Pièce</p>
-    <div class="chips" id="rooms"></div>
+    <div class="chips" id="rooms" role="group" aria-label="Choix de la pièce"></div>
   </div>
 
   <div class="card">
     <p class="label"><span class="num">2</span> Élément à décrire</p>
-    <div class="chips" id="chips"></div>
+    <div class="chips" id="chips" role="group" aria-label="Choix de l’élément à décrire"></div>
   </div>
 
   <button class="btn" id="analyze" disabled>✨ &nbsp;Analyser</button>
@@ -346,7 +357,7 @@ function deviceId(){
   if(!d){ d = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)); localStorage.setItem(LS.device,d); }
   return d;
 }
-const APP_VERSION = '6.2';
+const APP_VERSION = '6.3';
 
 // URL du serveur figée : le client n'a qu'à coller sa clé d'accès.
 const BACKEND_URL = 'https://edl-ia-api.monkey-pro-instant-events.workers.dev';
@@ -435,12 +446,12 @@ format +
 
 function renderRooms(){
   const c=$('rooms'); c.innerHTML='';
-  ROOMS.forEach(r=>{ const b=document.createElement('button'); b.className='chip'+(r.id===selectedRoom?' on':'');
+  ROOMS.forEach(r=>{ const b=document.createElement('button'); b.type='button'; const on=(r.id===selectedRoom); b.className='chip'+(on?' on':''); b.setAttribute('aria-pressed',on?'true':'false');
     b.textContent=r.label; b.onclick=()=>{selectedRoom=r.id;localStorage.setItem(LS.room,r.id);renderRooms();}; c.appendChild(b);});
 }
 function renderChips(){
   const c=$('chips'); c.innerHTML='';
-  ELEMENTS.forEach(e=>{ const b=document.createElement('button'); b.className='chip'+(e.id===selectedEl?' on':'');
+  ELEMENTS.forEach(e=>{ const b=document.createElement('button'); b.type='button'; const on=(e.id===selectedEl); b.className='chip'+(on?' on':''); b.setAttribute('aria-pressed',on?'true':'false');
     b.textContent=e.label; b.onclick=()=>{selectedEl=e.id;localStorage.setItem(LS.el,e.id);renderChips();}; c.appendChild(b);});
 }
 function fileToJpegBase64(file,maxSize){
@@ -483,8 +494,16 @@ async function callGemini(contents, modelOverride){
   if(!backend || !license){ openSettings(true); throw new Error('Clé d’accès manquante.'); }
   const res=await fetch(backend,{ method:'POST', headers:{'Content-Type':'application/json','X-License':license,'X-Device':deviceId()},
     body:JSON.stringify({ model:(modelOverride||currentModel()), contents, generationConfig:{temperature:0.2,maxOutputTokens:2048} }) });
-  const data=await res.json();
-  if(!res.ok) throw new Error(data.error || ('Erreur '+res.status));
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok){
+    let m=data.error||'';
+    if(res.status===402) m='Quota atteint — renouvelle ton abonnement pour continuer (bouton « Renouveler » en haut).';
+    else if(res.status===429) m='Trop d’analyses en une minute — patiente environ 1 minute puis réessaie.';
+    else if(res.status===403 && !m) m='Clé d’accès refusée — vérifie-la dans ⚙️ (clé expirée ou trop d’appareils).';
+    else if(res.status===401) m='Clé d’accès manquante — ouvre ⚙️ pour la coller.';
+    else if(!m) m='Problème de connexion au service — réessaie dans un instant.';
+    const err=new Error(m); err.status=res.status; throw err;
+  }
   const text=(data.text||'').trim();
   if(!text) throw new Error('Réponse vide.');
   return text;
@@ -497,7 +516,7 @@ async function runRequest(contents, btn, busyLabel, modelOverride){
   try{
     const text=await callGemini(contents, modelOverride);
     showResult(text); localStorage.setItem(LS.last,text); loadQuota();
-  }catch(err){ showError('Échec : '+err.message); }
+  }catch(err){ showError(err.message); if(err.status===402) showLowQuota(0); }
   finally{ btn.innerHTML=old; btn.disabled=false; $('analyze').disabled=photos.length===0; $('dockAnalyze').disabled=photos.length===0; }
 }
 
@@ -540,17 +559,30 @@ function reformulate(mode, btn){
 
 async function loadQuota(){
   const backend=backendURL(); const license=(localStorage.getItem(LS.license)||'').trim();
-  if(!backend || !license){ $('quota').textContent=''; return; }
+  const q=$('quota');
+  const clear=()=>{ q.textContent=''; q.classList.remove('low'); showLowQuota(-1); };
+  if(!backend || !license){ clear(); return; }
   try{
     const res=await fetch(backend+'/me',{ headers:{'X-License':license,'X-Device':deviceId()} });
     const d=await res.json();
     if(res.ok && d.valid){
-      $('quota').textContent = (d.plan==='admin' || d.remaining>1000000) ? '∞' : String(d.remaining);
-    } else { $('quota').textContent=''; }
-  }catch(e){ $('quota').textContent=''; }
+      const inf=(d.plan==='admin' || d.remaining>1000000);
+      q.textContent = inf ? '∞' : String(d.remaining);
+      const low = !inf && d.remaining<=20;
+      q.classList.toggle('low', low);
+      q.setAttribute('aria-label', inf ? 'Analyses illimitées' : (d.remaining+' analyses restantes'));
+      showLowQuota(low ? d.remaining : -1);
+    } else { clear(); }
+  }catch(e){ clear(); }
+}
+function showLowQuota(n){
+  const el=$('lowq'); if(!el) return;
+  if(n<0){ el.classList.remove('show'); el.innerHTML=''; return; }
+  el.innerHTML = 'Il te reste <b>'+n+'</b> analyse'+(n>1?'s':'')+'. <a href="vente.html#tarifs" target="_blank" rel="noopener">Renouveler l’abonnement</a>';
+  el.classList.add('show');
 }
 function showResult(text){
-  $('result').textContent=cleanText(text); $('resultCard').style.display='block'; refreshClear();
+  $('result').textContent=cleanText(text); const rc=$('resultCard'); rc.style.display='block'; rc.classList.remove('in'); void rc.offsetWidth; rc.classList.add('in'); refreshClear();
   $('dockCopy').disabled=false;
   requestAnimationFrame(()=>{
     const y = $('resultCard').getBoundingClientRect().top + window.scrollY - 10;
