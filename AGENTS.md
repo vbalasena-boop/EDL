@@ -1,24 +1,25 @@
 <!-- relais:debut -->
-# Claude ↔ Codex — mode relais économe
+# Relais Claude ↔ Codex (règles communes)
 
-Deux agents (Claude Code, Codex) se relaient sur ce dépôt ; le fondateur bascule de l'un à l'autre selon le quota restant. Tout l'état vit dans le dépôt, jamais dans une conversation.
+Deux agents se relaient sur ce dépôt : **Claude** planifie, vérifie et utilise les outils de production ; **Codex** code, dans une session Claude (`codex exec`) ou via l'autopilote GitHub (`.github/workflows/autopilote.yml`). Tout l'état vit dans le dépôt, jamais dans une conversation.
 
-**État** : si `_bmad-output/implementation-artifacts/sprint-status.yaml` existe (BMAD), l'état = `grep -vE ': done$'` de ce fichier + la fiche de la story. Sinon, `RELAIS.md` à la racine (« À faire / En cours / Fait », une ligne par tâche avec `Agent :`, et la section « Reprise » de la tâche en cours). Lire seulement ça, puis les fichiers nécessaires par extraits. Pas d'exploration du dépôt, pas d'audit non demandé.
+**État** : `python3 scripts/relais/etat.py statut` (stories ouvertes), `etat.py meta <clé>` (agent, niveau, modèle, fiche), `etat.py passer <clé> <statut> [--agent X]` pour écrire. Lire ensuite la fiche, puis les fichiers utiles par extraits. Pas d'exploration ni d'audit non demandés.
 
-**Un seul agent à la fois** (règle du fondateur) : avant toute action, `git pull`, puis regarder les tâches en cours. Si l'une porte l'autre agent et que le dernier commit date de moins d'1 h (`git log -1 --format=%cr`), ne rien modifier et répondre en une ligne : « <Agent> travaille déjà : dis-lui « relais » d'abord. » Au-delà d'1 h, l'autre agent est considéré arrêté : reprendre sa tâche.
-**Verrou Codex cloud** : Codex relancé par le veilleur travaille dans une PR, invisible sur la branche par défaut. Avant de reprendre une tâche arrêtée, vérifier sur GitHub : une issue ouverte au label `veilleur` contenant une mention `@codex`, ou une PR ouverte de Codex, signifie que **Codex a la main** → ne rien modifier et répondre « Codex a repris la suite : valide sa PR d'abord. » Le verrou tombe quand la PR est fusionnée. Sans accès GitHub pour vérifier, demander au fondateur.
+**Fiche** `_bmad-output/implementation-artifacts/spec-<clé>.md` : en tête `**Agent :** codex|claude`, `**Niveau :** simple|moyen|complexe` et `**Priorité :** haute|normale|basse` (défaut normale), puis objectif, critères vérifiables, fichiers, section « Reprise » (fait / reste / prochaine commande, 3 lignes). Statuts : `ready-for-dev` → `in-progress` → `review` → `done`.
 
-**Zones** (préférence, pas verrou) : Claude = back-end, base de données, sécurité, paiements ; Codex = pages, composants, design. Rien de prêt dans sa zone → prendre n'importe quelle tâche prête.
+**Un agent par story** : une story `in-progress` appartient à l'agent noté dans sa fiche (`claude`, `codex`, `autopilote`). N'y pas toucher tant que sa fiche a changé il y a moins d'1 h (2 h pour `autopilote`) ; au-delà elle est arrêtée : la reprendre. Les autres stories restent libres. Une story confiée explicitement (par Claude ou par l'autopilote) appartient à l'agent qui la reçoit, même si une autre story est en cours.
+
+**Autopilote** (toutes les 2 h, ou lancé par Claude ou par le hook de limite Claude) : prochaine story → Codex code puis se relit dans le même run → `scripts/relais/verifier.sh` (tests, lint, types). OK → push sur la branche par défaut et story suivante. Échec, ou fichier dans `CHEMINS_SENSIBLES` (`.relais/config`) → PR brouillon. Après un échec, nouvel essai avec le modèle le plus puissant ; deux échecs → `Agent : claude`. Résumé quotidien à 18 h 47 sur le tableau de bord. Tableau de bord : issue « 🛰️ Relais — tableau de bord ».
 
 **Commandes du fondateur** :
-- « prends la suite » → tâche en cours dont l'agent est arrêté (relais ou > 1 h), sinon la prochaine à faire.
-- « relais » → point de reprise, `Agent : relais`, push, réponse d'une ligne.
-- « statut » → une ligne par tâche ouverte.
-- Demande nouvelle → petite tâche (≤ 1 h, critères vérifiables, `Agent :`) ajoutée à l'état, puis traitée.
+- « prends la suite » → Claude : autopilote pour les stories Codex, et prend lui-même les stories `claude` ; Codex : `etat.py prochaine`.
+- « relais » → point de reprise, push, autopilote pour toutes les stories (`pour=tous`), réponse d'une ligne.
+- « statut » → `etat.py statut` + lien du tableau de bord.
+- Demande nouvelle → petite fiche (≤ 1 h, critères vérifiables, Agent, Niveau) en `ready-for-dev`, puis aiguillage.
 
-**Points de reprise** : après chaque étape utile, mettre à jour « Reprise » (fait / reste / prochaine commande, 3 lignes max), committer, pousser.
+**Points de reprise** : après chaque étape utile, mettre à jour « Reprise », committer, `git pull --no-rebase`, pousser sur la branche par défaut.
 
-**Fini** = critères vérifiés + tests/lint/build du projet OK (ciblés pendant le travail, complets une fois à la fin).
+**Fini** = critères cochés + `scripts/relais/verifier.sh` OK (ciblé pendant le travail, complet à la fin).
 
 **Économie** : réponses en français, 5 lignes max, sans récapitulatif.
 <!-- relais:fin -->

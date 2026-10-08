@@ -1,0 +1,98 @@
+name: Autopilote Codex
+on:
+  schedule:
+    - cron: '23 */2 * * *' # filet de sécurité ; l'enchaînement et le hook de limite Claude font l'essentiel
+  workflow_dispatch:
+    inputs:
+      declencheur:
+        type: string
+        default: manuel
+      pour:
+        type: string
+        default: codex
+      story:
+        type: string
+        default: ''
+      profondeur:
+        type: string
+        default: '0'
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: write
+  deployments: read
+concurrency:
+  group: relais-codex
+  cancel-in-progress: false
+jobs:
+  autopilote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+      DECLENCHEUR: ${{ github.event_name == 'schedule' && 'schedule' || inputs.declencheur || 'manuel' }}
+      POUR: ${{ inputs.pour || 'codex' }}
+      STORY: ${{ inputs.story || '' }}
+      PROFONDEUR: ${{ inputs.profondeur || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+      - name: Identité git
+        run: |
+          git config user.name 'Autopilote (Codex)'
+          git config user.email 'autopilote@users.noreply.github.com'
+      - id: decision
+        env:
+          SECRET_CODEX: ${{ secrets.CODEX_AUTH_CI != '' }}
+        run: scripts/relais/autopilote.sh decider
+      - uses: actions/setup-node@v4
+        if: steps.decision.outputs.go == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Cache node_modules
+        id: cache-modules
+        if: steps.decision.outputs.go == 'true'
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: modules-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
+      - name: Dépendances
+        if: steps.decision.outputs.go == 'true' && steps.cache-modules.outputs.cache-hit != 'true'
+        run: npm ci
+      - name: Codex CLI
+        if: steps.decision.outputs.go == 'true'
+        run: npm install -g @openai/codex@0.159.3
+      - name: Bac à sable Codex (bubblewrap sur Ubuntu 24.04)
+        if: steps.decision.outputs.go == 'true'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      - name: Cache navigateur E2E
+        if: steps.decision.outputs.go == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: Base Postgres 16 jetable et proxy Neon local
+        if: steps.decision.outputs.go == 'true'
+        continue-on-error: true
+        run: bash scripts/relais/base-e2e-locale.sh --github
+      - name: Stories (boucle)
+        if: steps.decision.outputs.go == 'true'
+        env:
+          CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_CI }}
+        run: scripts/relais/autopilote.sh boucle
+      - name: Sauvegarde et nettoyage auth
+        if: always() && steps.decision.outputs.go == 'true'
+        env:
+          RELAIS_PAT: ${{ secrets.RELAIS_PAT }}
+        run: scripts/relais/autopilote.sh sauver-auth
+      - name: Tableau de bord
+        if: always()
+        run: scripts/relais/autopilote.sh tableau
+      - name: Suite
+        if: success() && steps.decision.outputs.go == 'true'
+        run: scripts/relais/autopilote.sh enchainer

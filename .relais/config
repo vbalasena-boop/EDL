@@ -1,0 +1,11 @@
+# Réglages de l'autopilote (sourcés par scripts/relais/autopilote.sh). À adapter au projet.
+# Toute modification de ces chemins part en PR brouillon, jamais en push direct.
+CHEMINS_SENSIBLES=".github/ .claude/ .relais/ scripts/relais/ db/ migrations/ prisma/ supabase/"
+SEUIL_CLAUDE_MINUTES=45   # Claude a poussé il y a moins de 45 min → l'autopilote planifié laisse la main
+SEUIL_ARRET_MINUTES=60    # story in-progress sans activité depuis 60 min = arrêtée
+MAX_ENCHAINEMENTS=12      # stories max par chaîne d'auto-relance
+MAX_ECHECS=2              # échecs avant de rendre la story à Claude
+PLANIFIER_AUTO=oui        # file vide + epic in-progress → Codex écrit jusqu'à 5 stories
+MAX_PAR_RUN=6             # stories enchaînées dans un même run
+BUDGET_RUN_MINUTES=150    # au-delà, le run passe la main à un nouveau run
+PRENDRE_CLAUDE_SI_INACTIF=oui  # Claude inactif → Codex prend aussi ses stories (toujours en PR)
