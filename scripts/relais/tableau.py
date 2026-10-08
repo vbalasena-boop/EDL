@@ -35,7 +35,8 @@ def rendre(dossier):
         if (valeur and float(valeur) >= 95) or (quota and not valeur):
             reprise = max(reprise, int(float(env.get(reset) or now + 1800)))
     if quota and reprise <= now:
-        reprise = max([now + 1800] + [int(float(env[k])) for k in ('RESET_CINQ', 'RESET_SEMAINE') if env.get(k)])
+        # Pourcentages inconnus : on attend le reset 5 h, pas celui de la semaine (trop pessimiste).
+        reprise = max(now + 1800, int(float(env.get('RESET_CINQ') or 0)))
     if env.get('DECLENCHEUR') in ('limite-claude', 'relais'):
         tous = now + 6 * 3600
     url = f"https://github.com/{env['GITHUB_REPOSITORY']}/actions/runs/{env['GITHUB_RUN_ID']}"

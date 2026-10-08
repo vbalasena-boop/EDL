@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Codex peut réécrire ce script pendant le run, or bash le lit au fil de l'exécution :
+# sur le runner, on tourne toujours depuis une copie figée (sinon « syntax error » en fin de boucle).
+if [[ "${GITHUB_ACTIONS:-}" == true && -n ${RUNNER_TEMP:-} && "$0" != "$RUNNER_TEMP/autopilote-fige.sh" ]]; then
+    cp "$0" "$RUNNER_TEMP/autopilote-fige.sh"
+    exec bash "$RUNNER_TEMP/autopilote-fige.sh" "$@"
+fi
 source .relais/config
 export RUNNER_TEMP=${RUNNER_TEMP:-${TMPDIR:-/tmp}/relais-local-$$}
 mkdir -p "$RUNNER_TEMP"
@@ -37,8 +43,10 @@ apercu() {
     # Lien de déploiement d'aperçu (Vercel publie un « deployment » GitHub par commit), 4 min max.
     local sha=$1 id url
     [[ "${GITHUB_ACTIONS:-}" == true ]] || return 0
-    for _ in $(seq 1 24); do
+    for essai in $(seq 1 24); do
         id=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$sha&per_page=1" --jq '.[0].id // empty' 2>/dev/null || true)
+        # Aucun déploiement après 1 min : Vercel ne déploie pas cette branche, inutile d'attendre.
+        [[ -n "$id" || $essai -lt 6 ]] || return 0
         if [[ -n "$id" ]]; then
             url=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses" --jq '[.[] | select(.state == "success")][0].environment_url // empty' 2>/dev/null || true)
             [[ -z "$url" ]] || { echo "$url"; return 0; }
@@ -58,6 +66,24 @@ push_default() {
         [[ ! -f $(git rev-parse --git-path MERGE_HEAD) ]] || return 1
     done
     return 1
+}
+e2e_jetable() {
+    local -a environnement=(
+        PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}"
+        NEON_FETCH_ENDPOINT=http://localhost:4444/sql
+        DATABASE_URL=postgres://postgres:postgres@db.localtest.me:5432/neondb
+        SESSION_SECRET="$(openssl rand -hex 32)"
+        HELLOASSO_API_URL=http://127.0.0.1:4466
+    )
+    [[ -z ${PLAYWRIGHT_BROWSERS_PATH:-} ]] || environnement+=(PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH")
+    # Sans base jetable prête (projet sans migrations Neon, ou préparation en échec) : E2E comme avant.
+    if [[ ! -f scripts/migrate.mjs ]] || ! curl -sf -m 2 -o /dev/null -X POST localhost:4444/sql \
+        -H 'Neon-Connection-String: postgres://postgres:postgres@db.localtest.me:5432/neondb' -d '{"query":"select 1","params":[]}'; then
+        env -u GH_TOKEN -u GITHUB_TOKEN scripts/relais/e2e.sh "$@"; return
+    fi
+    # La story peut ajouter une migration après la préparation initiale du runner.
+    env -i "${environnement[@]}" node scripts/migrate.mjs || return
+    env -i "${environnement[@]}" scripts/relais/e2e.sh "$@"
 }
 case ${1:-} in
     decider)
@@ -119,7 +145,7 @@ case ${1:-} in
         case "$MODE" in
             implementer) prompt="L'autopilote te confie la story BMAD $STORY : elle t'appartient, le verrou « un agent par story » d'AGENTS.md ne s'applique pas à toi. Fiche : $FICHE. Implémente tous les critères d'acceptation, en respectant AGENTS.md. Lance les tests ciblés (unitaires). Ne lance pas les tests E2E Playwright : ton bac à sable n'a pas de navigateur, l'autopilote les lance après toi. Coche les critères faits et mets à jour la section Reprise de la fiche. Ne modifie pas sprint-status.yaml. Ni commit ni push." ;;
             revue) prompt="L'autopilote te confie la story BMAD $STORY : elle t'appartient, le verrou « un agent par story » d'AGENTS.md ne s'applique pas à toi. Relis le travail de la story $STORY (fiche $FICHE ; commits : git log --oneline --grep $STORY) contre ses critères d'acceptation. Corrige tout défaut ou critère manquant. Mets à jour la Reprise. Ni commit ni push. Si tout est bon, ne change rien au code." ;;
-            planifier) prompt="L'autopilote te confie la planification de l'epic $EPIC. Cet epic est validé mais n'a plus de story ouverte. À partir des documents de _bmad-output/planning-artifacts/ qui le concernent, écris jusqu'à 5 prochaines stories (≤ 1 h chacune), chacune dans _bmad-output/implementation-artifacts/spec-<clé>.md avec **Agent :** (codex, ou claude si elle exige base de données, migrations, sécurité, paiements ou outils de production), **Niveau :** (simple|moyen|complexe), **Priorité :** (haute|normale|basse), objectif, critères d'acceptation vérifiables, fichiers concernés, section Reprise ; ajoute-les en ready-for-dev dans development_status, sous l'epic. Ne code rien. Si les documents montrent que tout l'epic est déjà livré, n'écris aucune story : passe $EPIC en done et $EPIC-retrospective en done dans development_status, et écris la rétrospective dans _bmad-output/implementation-artifacts/$EPIC-retro-$(date +%Y-%m-%d).md (livré, ce qui a coincé d'après les sections Reprise et les échecs de l'autopilote, PR encore ouvertes, 3 actions). Ni commit ni push." ;;
+            planifier) prompt="L'autopilote te confie la planification de l'epic $EPIC. Cet epic est validé mais n'a plus de story ouverte. À partir des documents de _bmad-output/planning-artifacts/ qui le concernent, écris jusqu'à 5 prochaines stories (≤ 1 h chacune), chacune dans _bmad-output/implementation-artifacts/spec-<clé>.md avec **Agent :** (codex, ou claude si elle exige base de données, migrations, sécurité, paiements, outils de production ou une modification de .github/workflows), **Niveau :** (simple|moyen|complexe), **Priorité :** (haute|normale|basse), **Dépendances :** (clés complètes des stories à terminer avant, ou Aucune), objectif, critères d'acceptation vérifiables, fichiers concernés, section Reprise ; ajoute-les en ready-for-dev dans development_status, sous l'epic. Ne code rien. Si les documents montrent que tout l'epic est déjà livré, n'écris aucune story : passe $EPIC en done et $EPIC-retrospective en done dans development_status, et écris la rétrospective dans _bmad-output/implementation-artifacts/$EPIC-retro-$(date +%Y-%m-%d).md (livré, ce qui a coincé d'après les sections Reprise et les échecs de l'autopilote, PR encore ouvertes, 3 actions). Ni commit ni push." ;;
             *) exit 1 ;;
         esac
         if env -u CODEX_AUTH_JSON -u RELAIS_PAT -u GH_TOKEN -u GITHUB_TOKEN codex exec --json --model "$MODELE" --sandbox workspace-write -C "$GITHUB_WORKSPACE" "$prompt" > "$RUNNER_TEMP/codex.jsonl" 2> "$RUNNER_TEMP/codex.err"; then out codex_ok true; fi
@@ -149,7 +175,8 @@ for ligne in open(sys.argv[1]).read().splitlines()[-200:]:
     elif t == "item.completed" and item.get("type") == "command_execution" and item.get("exit_code") not in (0, None):
         print("commande", item.get("exit_code"), str(item.get("command"))[:150], str(item.get("aggregated_output"))[-200:])
 PY2
-        if grep -qi 'hit your usage limit' "$RUNNER_TEMP/codex.jsonl" "$RUNNER_TEMP/codex.err"; then out quota_atteint true; fi
+        # Quota seulement si Codex a échoué : la phrase peut figurer dans un fichier qu'il a lu (ce script, par exemple).
+        if [[ "$CODEX_OK" != true ]] && grep -qi 'hit your usage limit' "$RUNNER_TEMP/codex.jsonl" "$RUNNER_TEMP/codex.err"; then out quota_atteint true; fi
         # Erreur d'authentification seulement si Codex a échoué (un « 401 » peut apparaître dans du code ou des tests).
         if [[ "$CODEX_OK" != true ]] && grep -Eqi 'refresh_token_reused|refresh token|401 Unauthorized|Not signed in|please log in' "$RUNNER_TEMP/codex.err" "$RUNNER_TEMP/codex.jsonl"; then out auth_ko true; fi
         while IFS='=' read -r key value; do out "$key" "$value"; done < <(etat quota-codex "$CODEX_HOME")
@@ -201,7 +228,7 @@ PY2
             # Specs modifiés par la story + specs cités dans sa fiche (critères d'acceptation).
             mapfile -t specs < <({ git diff --name-only HEAD; git ls-files --others --exclude-standard; [[ -z "$FICHE" ]] || grep -oE 'e2e/[A-Za-z0-9._/-]+\.spec\.ts' "$FICHE"; } | grep -E '^e2e/.*\.spec\.ts$' | sort -u | while read -r f; do [[ -f "$f" ]] && echo "$f"; done)
             if (( ${#specs[@]} )); then
-                if env -u GH_TOKEN -u GITHUB_TOKEN scripts/relais/e2e.sh "${specs[@]}" >> "$RUNNER_TEMP/verifier.log" 2>&1; then echo "E2E OK : ${specs[*]}"
+                if e2e_jetable "${specs[@]}" >> "$RUNNER_TEMP/verifier.log" 2>&1; then echo "E2E OK : ${specs[*]}"
                 else verification=false; echo "E2E en échec : ${specs[*]}"; fi
             fi
         fi
@@ -223,6 +250,15 @@ PY2
             else
             branche="autopilote/${STORY:-$EPIC}-$GITHUB_RUN_ID"
             git switch -c "$branche"
+            # Le jeton GitHub Actions ne peut pas pousser de workflow : on garde ces changements en patch, appliqué par Claude.
+            if [[ -n $(git status --porcelain -- .github/workflows) ]]; then
+                git add -N -- .github/workflows
+                git diff -- .github/workflows > "_bmad-output/implementation-artifacts/workflows-${STORY:-$EPIC}.patch"
+                git reset -q -- .github/workflows
+                git checkout -- .github/workflows 2>/dev/null || true
+                git clean -fdq -- .github/workflows
+                raison="$raison, workflows en patch à appliquer par Claude"
+            fi
             if [[ -z $(git status --porcelain) ]]; then
                 mkdir -p _bmad-output/implementation-artifacts
                 printf 'Autopilote : run %s, %s\n' "$GITHUB_RUN_ID" "$raison" > "_bmad-output/implementation-artifacts/autopilote-$GITHUB_RUN_ID.md"
@@ -288,6 +324,7 @@ PY
         ;;
     enchainer)
         if [[ ${GO:-false} != true || ${QUOTA_ATTEINT:-false} == true || ${AUTH_KO:-false} == true ]]; then exit 0; fi
+        [[ ${RAISON:-} != pr-en-attente ]] || exit 0
         if (( PROFONDEUR + 1 >= MAX_ENCHAINEMENTS )); then exit 0; fi
         prochaine=$(etat prochaine --pour "$POUR" --seuil "$SEUIL_ARRET_MINUTES")
         epic=''
@@ -320,6 +357,9 @@ PY
             n=$((n + 1)); source "$state"
             echo "Story $n : ${STORY:-$EPIC} → ${RESULTAT:-?}"
             [[ ${QUOTA_ATTEINT:-false} != true && ${AUTH_KO:-false} != true ]] || break
+            # Story partie en PR : les suivantes pourraient en dépendre (migration, colonne, API).
+            # On s'arrête ; la chaîne reprendra une fois la PR fusionnée par Claude.
+            [[ "${RESULTAT:-}" != pr-brouillon ]] || { echo "Arrêt : PR en attente de relecture"; out raison pr-en-attente; break; }
             (( n < ${MAX_PAR_RUN:-6} && $(date +%s) - debut < ${BUDGET_RUN_MINUTES:-150} * 60 )) || break
             git pull --no-rebase -q || break
             grep -E '^export (CINQ_HEURES|SEMAINE|RESET_CINQ|RESET_SEMAINE|ALERTE_AUTH)=' "$state" > "$RUNNER_TEMP/garde" || true

@@ -76,8 +76,18 @@ def stories():
     return {k: v for k, v in etats().items() if not k.startswith('epic-') and not k.endswith('-retrospective')}
 
 
+def dependances_ouvertes(texte, statuts):
+    """Clés complètes citées dans la ligne « Dépendances » de la fiche et pas encore done."""
+    for ligne in texte.splitlines()[:25]:
+        match = champ(ligne, 'd[ée]pendances')
+        if match:
+            return [k for k, v in statuts.items() if k in match[2] and v != 'done']
+    return []
+
+
 def prochaine(pour='codex', seuil=60, max_echecs=2):
     candidats = []
+    statuts = etats()
     for cle, statut in stories().items():
         if statut not in ('review', 'in-progress', 'ready-for-dev'):
             continue
@@ -93,6 +103,9 @@ def prochaine(pour='codex', seuil=60, max_echecs=2):
             continue
         # Trop d'échecs de l'autopilote : la story attend Claude.
         if max_echecs and len(re.findall(r'^- Autopilote : échec \d+', Path(m['fiche']).read_text(encoding='utf-8'), re.M)) >= max_echecs:
+            continue
+        # Une story dont un prérequis n'est pas terminé attend (sinon elle part sans son socle).
+        if statut == 'ready-for-dev' and dependances_ouvertes(Path(m['fiche']).read_text(encoding='utf-8'), statuts):
             continue
         priorite = {'review': 0, 'in-progress': 1, 'ready-for-dev': 2}[statut]
         if statut == 'in-progress' and m['agent'] != 'relais':

@@ -12,6 +12,10 @@ if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
   if ! command -v codex >/dev/null 2>&1; then
     npm install -g --silent "@openai/codex@0.159.3" >/dev/null 2>&1 || echo "⚠️ Installation de Codex impossible."
   fi
+  # Base E2E jetable + serveur Next précompilé, en arrière-plan (ne retarde pas la session).
+  if [ -x scripts/relais/serveur-e2e.sh ]; then
+    (setsid nohup scripts/relais/serveur-e2e.sh >/var/tmp/relais-serveur-e2e.out 2>&1 &) 2>/dev/null
+  fi
 fi
 
 # File BMAD (stories ouvertes uniquement).

@@ -54,8 +54,12 @@ with open(os.environ['MOCK_LOG'],'a') as f: f.write('git '+repr(sys.argv[1:])+'\
 a=sys.argv[1:]
 if a[0]=='log': print(os.environ.get('MOCK_COMMIT',''))
 elif a[0]=='status': print(os.environ.get('MOCK_DIRTY',''),end='')
-elif a[:2]==['diff','--name-only']: print(os.environ.get('MOCK_FILES','').replace('|','\\0'),end='\\0')
-elif a[:2]==['ls-files','--others']: print(os.environ.get('MOCK_UNTRACKED','').replace('|','\\0'),end='\\0')
+elif a[:2]==['diff','--name-only']:
+    files=os.environ.get('MOCK_FILES','').split('|')
+    print(('\\0' if '-z' in a else '\\n').join(f for f in files if f),end='\\0' if '-z' in a else '\\n')
+elif a[:2]==['ls-files','--others']:
+    files=os.environ.get('MOCK_UNTRACKED','').split('|')
+    print(('\\0' if '-z' in a else '\\n').join(f for f in files if f),end='\\0' if '-z' in a else '\\n')
 elif a[:2]==['rev-parse','--git-path']: print('/nonexistent/merge-head')
 elif a[:2]==['diff','--cached']: sys.exit(1)
 ''')
@@ -178,6 +182,67 @@ sys.exit(int(os.environ.get('MOCK_CODEX_EXIT','0')))
         self.assertIn('6-1: ready-for-dev', self.status.read_text())
         self.assertIn('controle-en-echec', (self.runner / 'pr.md').read_text())
         self.assertIn("'--draft'", (self.root / 'calls').read_text())
+
+    def test_publier_e2e_migre_avant_avec_base_jetable_seulement(self):
+        spec = self.root / 'e2e/nouvelle.spec.ts'
+        spec.parent.mkdir()
+        spec.write_text('// test simulé\n')
+        self.fiche.write_text(self.fiche.read_text() + '\ne2e/nouvelle.spec.ts\n')
+        journal = self.root / 'e2e-env.jsonl'
+        # Projet avec migrations Neon et proxy local joignable : E2E sur la base jetable.
+        (self.root / 'scripts/migrate.mjs').write_text('')
+        self.executable('curl', '#!/usr/bin/env bash\nexit 0\n')
+        mock = '''#!/usr/bin/env python3
+import json,os,sys
+with open('e2e-env.jsonl','a') as f:
+    f.write(json.dumps({'commande':sys.argv[0], 'env':dict(os.environ), 'args':sys.argv[1:]})+'\\n')
+'''
+        self.executable('node', mock)
+        e2e = self.root / 'scripts/relais/e2e.sh'
+        e2e.write_text(mock)
+        e2e.chmod(0o755)
+        self.decide()
+        sortie = self.run_script('publier', CODEX_OK='true', MOCK_DIRTY=' M src/page.tsx',
+                                 MOCK_FILES='src/page.tsx',
+                                 DATABASE_URL='postgres://production.invalid/db',
+                                 SESSION_SECRET='production-secret', RELAIS_PAT='production-pat',
+                                 PRODUCTION_TOKEN='production-token')
+        self.assertIn('E2E OK : e2e/nouvelle.spec.ts', sortie)
+        appels = [json.loads(line) for line in journal.read_text().splitlines()]
+        self.assertEqual([Path(c['commande']).name for c in appels], ['node', 'e2e.sh'])
+        self.assertEqual(appels[0]['args'], ['scripts/migrate.mjs'])
+        self.assertEqual(appels[1]['args'], ['e2e/nouvelle.spec.ts'])
+        for appel in appels:
+            env = appel['env']
+            self.assertEqual(env['DATABASE_URL'], 'postgres://postgres:postgres@db.localtest.me:5432/neondb')
+            self.assertEqual(env['NEON_FETCH_ENDPOINT'], 'http://localhost:4444/sql')
+            self.assertEqual(len(env['SESSION_SECRET']), 64)
+            for cle in ('PRODUCTION_TOKEN', 'RELAIS_PAT', 'GITHUB_TOKEN', 'GH_TOKEN', 'CODEX_AUTH_JSON'):
+                self.assertNotIn(cle, env)
+        self.assertEqual(appels[0]['env']['SESSION_SECRET'], appels[1]['env']['SESSION_SECRET'])
+
+    def test_base_github_prepare_docker_et_migre_sans_su(self):
+        self.executable('docker', '''#!/usr/bin/env python3
+import os,sys
+with open(os.environ['MOCK_LOG'],'a') as f: f.write('docker '+repr(sys.argv[1:])+'\\n')
+sys.exit(1 if sys.argv[1]=='inspect' else 0)
+''')
+        self.executable('curl', '#!/usr/bin/env bash\nexit 0\n')
+        (self.root / 'scripts/migrate.mjs').write_text('')
+        self.executable('node', '''#!/usr/bin/env python3
+import json,os,sys
+with open(os.environ['MOCK_LOG'],'a') as f:
+    f.write('migration '+json.dumps({'args':sys.argv[1:], 'url':os.environ.get('DATABASE_URL'), 'proxy':os.environ.get('NEON_FETCH_ENDPOINT')})+'\\n')
+''')
+        result = subprocess.run(['bash', 'scripts/relais/base-e2e-locale.sh', '--github'], cwd=self.root,
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        journal = (self.root / 'calls').read_text()
+        self.assertIn("'postgres:16'", journal)
+        self.assertIn("'PG_CONNECTION_STRING=postgres://postgres:postgres@127.0.0.1:5432/neondb'", journal)
+        self.assertIn('migration ', journal)
+        self.assertIn('http://localhost:4444/sql', journal)
+        self.assertNotIn('su postgres', journal)
 
     def test_auth_sauvegarde_echouee_nettoie(self):
         self.decide()

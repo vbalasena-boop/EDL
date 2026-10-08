@@ -76,6 +76,10 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: Base Postgres 16 jetable et proxy Neon local
+        if: steps.decision.outputs.go == 'true'
+        continue-on-error: true
+        run: bash scripts/relais/base-e2e-locale.sh --github
       - name: Stories (boucle)
         if: steps.decision.outputs.go == 'true'
         env:

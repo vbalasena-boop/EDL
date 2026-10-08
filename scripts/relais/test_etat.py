@@ -83,6 +83,15 @@ class EtatTest(unittest.TestCase):
         self.fiche('6-3', 'Agent: codex')
         self.assertEqual(etat.prochaine(), '6-3')
 
+    def test_dependance_non_terminee_attend(self):
+        self.status.write_text('development_status:\n  6-1-serveur: ready-for-dev\n  6-2-formulaire: ready-for-dev\n')
+        self.fiche('6-1-serveur', 'Agent: claude')
+        self.fiche('6-2-formulaire', 'Agent: codex\n**Dépendances :** 6-1-serveur doit être terminée.')
+        self.assertEqual(etat.prochaine(), '')
+        self.assertEqual(etat.prochaine('tous'), '6-1-serveur')
+        etat.passer('6-1-serveur', 'done')
+        self.assertEqual(etat.prochaine(), '6-2-formulaire')
+
     def test_fiche_absente_non_selectionnee(self):
         self.status.write_text('development_status:\n  absente: in-progress\n  6-1: ready-for-dev\n')
         self.assertEqual(etat.prochaine(), '6-1')
